@@ -6,8 +6,8 @@ namespace AillieoUtils
 {
     public struct DefaultScrollItemData : IScrollItemData
     {
-        int id;
-        string name;
+        public int id;
+        public string name;
     }
 
 }
