@@ -282,8 +282,9 @@ namespace AillieoUtils
             {
                 item = GetCriticalItem(criticalItemType);
                 criticalIndex = criticalItemIndex[criticalItemType];
-
-                if (item == null && ShouldItemFullySeenAtIndex(criticalItemIndex[criticalItemType - 2]))
+                
+                //if (item == null && ShouldItemFullySeenAtIndex(criticalItemIndex[criticalItemType - 2]))
+                if (item == null && ShouldItemSeenAtIndex(criticalIndex))
                 {
                     ScrollItem newItem = itemPool.Get();
                     OnGetItemForDataIndex(newItem, criticalIndex);
@@ -372,7 +373,11 @@ namespace AillieoUtils
                     ScrollItem item = itemObj.GetComponent<ScrollItem>();
                     itemObj.transform.SetParent(poolNode.transform,false);
                     RectTransform rectTrans = item.rectTransform;
+
+                    rectTrans.anchorMin = Vector2.up;
+                    rectTrans.anchorMax = Vector2.up;
                     rectTrans.pivot = Vector2.zero;
+
                     //rectTrans.pivot = Vector2.up;
                     return item;
                 });
@@ -588,7 +593,19 @@ namespace AillieoUtils
                 managedItems[i].rect = new Rect(curPos.x,curPos.y-size.y,size.x,size.y);
                 MovePos(ref curPos, size);
             }
-            content.sizeDelta = new Vector2(Mathf.Abs(curPos.x), Mathf.Abs(curPos.y));
+            Vector2 range = new Vector2(Mathf.Abs(curPos.x), Mathf.Abs(curPos.y));
+            switch (layoutType)
+            {
+                case ItemLayoutType.VerticalThenHorizontal:
+                    range.y = refRect.height;
+                    break;
+                case ItemLayoutType.HorizontalThenVertical:
+                    range.x = refRect.width;
+                    break;
+                default:
+                    break;
+            }
+            content.sizeDelta = range;
         }
 
         void MovePos(ref Vector2 pos, Vector2 size)
@@ -606,7 +623,7 @@ namespace AillieoUtils
                     break;
                 case ItemLayoutType.VerticalThenHorizontal:
                     pos.y -= size.y;
-                    if (pos.y < - refRect.height)
+                    if (pos.y <= - refRect.height)
                     {
                         pos.y = 0;
                         pos.x += size.x;
@@ -614,7 +631,7 @@ namespace AillieoUtils
                     break;
                 case ItemLayoutType.HorizontalThenVertical:
                     pos.x += size.x;
-                    if(pos.x > refRect.width)
+                    if(pos.x >= refRect.width)
                     {
                         pos.x = 0;
                         pos.y -= size.y;
