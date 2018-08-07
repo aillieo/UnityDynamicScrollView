@@ -14,7 +14,14 @@ public class TestScript : MonoBehaviour {
         item.transform.Find("Text").GetComponent<Text>().text = string.Format("{0}_{1}", sd.name, sd.id);
     }
 
-    Vector2 itemSizeFunc(int index)
+    void updateFunc_3(ScrollItem item, IScrollItemData data)
+    {
+        item.gameObject.SetActive(true);
+        DefaultScrollItemData sd = (DefaultScrollItemData)data;
+        item.GetComponent<Text>().text = GetLongTextByData((DefaultScrollItemData)data);
+    }
+
+    Vector2 itemSizeFunc_2(int index)
     {
         DefaultScrollItemData sd = (DefaultScrollItemData)testData[index];
         if(sd.name == "XXL")
@@ -27,6 +34,34 @@ public class TestScript : MonoBehaviour {
             return new Vector2(150, 90);
         else // "S"
             return new Vector2(100, 80);
+    }
+
+
+    Text templateText = null;
+    Vector2 itemSizeFunc_3(int index)
+    {
+        if(templateText == null)
+        {
+            InitTemplateText();
+        }
+        string content = GetLongTextByData((DefaultScrollItemData)testData[index]);
+        templateText.text = content;
+        templateText.CalculateLayoutInputVertical();
+        //templateText.CalculateLayoutInputHorizontal();
+        //return new Vector2(templateText.preferredWidth,templateText.preferredHeight);
+        return new Vector2(300, templateText.preferredHeight);
+    }
+    void InitTemplateText()
+    {
+        GameObject go = GameObject.Find("TextItem");
+        Text comp = go.GetComponentInChildren<Text>();
+        templateText = GameObject.Instantiate(comp) as Text;
+    }
+
+
+    string GetLongTextByData(DefaultScrollItemData data)
+    {
+        return string.Format("{0}->\n{1}{1}{1}{1}{1}", data.id, Math.Pow(data.id,10));
     }
 
     IScrollItemData[] testData = new IScrollItemData[] 
@@ -62,14 +97,21 @@ public class TestScript : MonoBehaviour {
     void Start () {
 
         ScrollView sv_1 = GameObject.Find("ScrollView_1").GetComponent<ScrollView>();
-        ScrollView sv_2 = GameObject.Find("ScrollView_2").GetComponent<ScrollView>();
-
         sv_1.SetUpdateFuncCS(updateFunc);
-        sv_2.SetUpdateFuncCS(updateFunc);
-
-        sv_2.SetItemSizeFuncCS(itemSizeFunc);
-
         sv_1.Init(testData);
+
+
+        ScrollView sv_2 = GameObject.Find("ScrollView_2").GetComponent<ScrollView>();
+        sv_2.SetUpdateFuncCS(updateFunc);
+        sv_2.SetItemSizeFuncCS(itemSizeFunc_2);
         sv_2.Init(testData);
+        
+
+        ScrollView sv_3 = GameObject.Find("ScrollView_3").GetComponent<ScrollView>();
+        sv_3.SetUpdateFuncCS(updateFunc_3);
+        sv_3.SetItemSizeFuncCS(itemSizeFunc_3);
+        sv_3.Init(testData);
+
     }
+
 }
