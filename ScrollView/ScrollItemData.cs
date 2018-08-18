@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace AillieoUtils
 {
-    public struct DefaultScrollItemData : IScrollItemData
+    public struct DefaultScrollItemData
     {
         public int id;
         public string name;
