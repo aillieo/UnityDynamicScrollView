@@ -4,21 +4,22 @@ using UnityEngine;
 using System;
 using AillieoUtils;
 using UnityEngine.UI;
+using SObject = System.Object;
 
 public class TestScript : MonoBehaviour {
 
-    void updateFunc(ScrollItem item, IScrollItemData data)
+    void updateFunc(ScrollItem item, SObject data)
     {
         item.gameObject.SetActive(true);
         DefaultScrollItemData sd = (DefaultScrollItemData)data;
         item.transform.Find("Text").GetComponent<Text>().text = string.Format("{0}_{1}", sd.name, sd.id);
     }
 
-    void updateFunc_3(ScrollItem item, IScrollItemData data)
+    void updateFunc_3(ScrollItem item, SObject data)
     {
         item.gameObject.SetActive(true);
         DefaultScrollItemData sd = (DefaultScrollItemData)data;
-        item.GetComponent<Text>().text = GetLongTextByData((DefaultScrollItemData)data);
+        item.GetComponent<Text>().text = GetLongTextByData(sd);
     }
 
     Vector2 itemSizeFunc_2(int index)
@@ -64,7 +65,7 @@ public class TestScript : MonoBehaviour {
         return string.Format("{0}->\n{1}{1}{1}{1}{1}", data.id, Math.Pow(data.id,10));
     }
 
-    IScrollItemData[] testData = new IScrollItemData[] 
+    DefaultScrollItemData[] testData = new DefaultScrollItemData[] 
     {
         new DefaultScrollItemData { name =   "XL",     id = 0 },
         new DefaultScrollItemData { name =   "XL",     id = 1 },

@@ -4,6 +4,8 @@ using System;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using SObject = System.Object;
+
 #if USE_LUA_FRAMEWORK
 using LuaInterface;
 #endif
@@ -28,7 +30,7 @@ namespace AillieoUtils
             CS = 0,
             Lua = 1,
         }
-        IScrollItemData[] csData;
+        Array csData;
 #if USE_LUA_FRAMEWORK
         LuaTable luaData;
 #endif
@@ -91,7 +93,7 @@ namespace AillieoUtils
 
 
         // callbacks for items
-        public Action<ScrollItem, IScrollItemData> updateFuncCS;
+        public Action<ScrollItem, SObject> updateFuncCS;
         public Func<int,Vector2> itemSizeFuncCS;
 #if USE_LUA_FRAMEWORK
         public LuaFunction updateFuncLua;
@@ -101,7 +103,7 @@ namespace AillieoUtils
         public Action<ScrollItem> recycleFunc;
 
 
-        public void SetUpdateFuncCS(Action<ScrollItem, IScrollItemData> func)
+        public void SetUpdateFuncCS(Action<ScrollItem, SObject> func)
         {
             updateFuncCS = func;
         }
@@ -111,14 +113,14 @@ namespace AillieoUtils
             itemSizeFuncCS = func;
         }
 
-        public void Init(IScrollItemData[] data)
+        public void Init(Array data)
         {
             InitScrollView();
             UpdateData(data);
         }
 
 
-        public void UpdateData(IScrollItemData[] data)
+        public void UpdateData(Array data)
         {
             csData = data;
             dataType = DataSourceType.CS;
@@ -202,15 +204,31 @@ namespace AillieoUtils
 
         bool IsCriticalItemTypeValid(int type)
         {
+            int dir = (int)layoutType & flagScrollDirection;
 
-            if (m_curDelta.y > 0)
+            if (dir == 1)
             {
-                return type == CriticalItemType.UpToHide || type == CriticalItemType.DownToShow;
+                if (m_curDelta[dir] > 0)
+                {
+                    return type == CriticalItemType.UpToHide || type == CriticalItemType.DownToShow;
+                }
+                else if (m_curDelta[dir] < 0)
+                {
+                    return type == CriticalItemType.DownToHide || type == CriticalItemType.UpToShow;
+                }
             }
-            else if (m_curDelta.y < 0)
+            else // dir == 0
             {
-                return type == CriticalItemType.DownToHide || type == CriticalItemType.UpToShow;
+                if (m_curDelta[dir] < 0)
+                {
+                    return type == CriticalItemType.UpToHide || type == CriticalItemType.DownToShow;
+                }
+                else if (m_curDelta[dir] > 0)
+                {
+                    return type == CriticalItemType.DownToHide || type == CriticalItemType.UpToShow;
+                }
             }
+
             return false;
         }
 
@@ -218,6 +236,7 @@ namespace AillieoUtils
         void UpdateCriticalItems()
         {
             //Debug.LogWarning((m_curDelta.y > 0 ? "↑↑" : "↓↓") + " criticalItemIndex = {" + criticalItemIndex[0] + " " + criticalItemIndex[1] + " " + criticalItemIndex[2] + " " + criticalItemIndex[3] + "}");
+
             for (int i = CriticalItemType.UpToHide; i <= CriticalItemType.DownToShow; i ++)
             {
                 if(!IsCriticalItemTypeValid(i))
@@ -274,7 +293,6 @@ namespace AillieoUtils
 
         void CheckAndShowItem(int criticalItemType)
         {
-
             ScrollItem item = null;
             int criticalIndex = -1;
 
@@ -284,6 +302,7 @@ namespace AillieoUtils
                 criticalIndex = criticalItemIndex[criticalItemType];
                 
                 //if (item == null && ShouldItemFullySeenAtIndex(criticalItemIndex[criticalItemType - 2]))
+
                 if (item == null && ShouldItemSeenAtIndex(criticalIndex))
                 {
                     ScrollItem newItem = itemPool.Get();
@@ -319,6 +338,7 @@ namespace AillieoUtils
             {
                 return false;
             }
+
             return new Rect(refRect.position - content.anchoredPosition, refRect.size).Overlaps(managedItems[index].rect);
         }
 
@@ -333,6 +353,7 @@ namespace AillieoUtils
 
         bool IsRectContains(Rect outRect, Rect inRect, bool bothDimensions = false)
         {
+
             if (bothDimensions)
             {
                 bool xContains = (outRect.xMax >= inRect.xMax) && (outRect.xMin <= inRect.xMin);
@@ -347,7 +368,7 @@ namespace AillieoUtils
                     // 垂直滚动 只计算y向
                     return (outRect.yMax >= inRect.yMax) && (outRect.yMin <= inRect.yMin);
                 }
-                else
+                else // = 0
                 {
                     // 水平滚动 只计算x向
                     return (outRect.xMax >= inRect.xMax) && (outRect.xMin <= inRect.xMin);
@@ -489,7 +510,7 @@ namespace AillieoUtils
             {
                 case DataSourceType.CS:
                     if (updateFuncCS != null && csData != null)
-                        updateFuncCS(item, csData[index]);
+                        updateFuncCS(item, csData.GetValue(index));
                     break;
 #if USE_LUA_FRAMEWORK
                 case DataSourceType.Lua:
@@ -597,10 +618,15 @@ namespace AillieoUtils
             switch (layoutType)
             {
                 case ItemLayoutType.VerticalThenHorizontal:
+                    range.x += size.x;
                     range.y = refRect.height;
                     break;
                 case ItemLayoutType.HorizontalThenVertical:
                     range.x = refRect.width;
+                    if (curPos.x != 0)
+                    {
+                        range.y += size.y;
+                    }
                     break;
                 default:
                     break;
