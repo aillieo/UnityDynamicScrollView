@@ -30,7 +30,7 @@ namespace AillieoUtils
             CS = 0,
             Lua = 1,
         }
-        Array csData;
+        IList csData;
 #if USE_LUA_FRAMEWORK
         LuaTable luaData;
 #endif
@@ -113,18 +113,18 @@ namespace AillieoUtils
             itemSizeFuncCS = func;
         }
 
-        public void Init(Array data)
+        public void Init(IList data)
         {
             InitScrollView();
             UpdateData(data);
         }
 
 
-        public void UpdateData(Array data)
+        public void UpdateData(IList data)
         {
             csData = data;
             dataType = DataSourceType.CS;
-            UpdateManagedItems(m_dataCount != data.Length);
+            UpdateManagedItems(m_dataCount != data.Count);
         }
 
 
@@ -411,7 +411,7 @@ namespace AillieoUtils
 #if USE_LUA_FRAMEWORK
                 int newDataCount = (dataType == DataSourceType.CS ? csData.Length : luaData.Length);
 #else
-                int newDataCount = csData.Length;
+                int newDataCount = csData.Count;
 #endif
                 if (newDataCount > managedItems.Length)  //增加
                 {
@@ -510,7 +510,7 @@ namespace AillieoUtils
             {
                 case DataSourceType.CS:
                     if (updateFuncCS != null && csData != null)
-                        updateFuncCS(item, csData.GetValue(index));
+                        updateFuncCS(item, csData[index]);
                     break;
 #if USE_LUA_FRAMEWORK
                 case DataSourceType.Lua:
