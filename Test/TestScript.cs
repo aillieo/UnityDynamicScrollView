@@ -62,7 +62,7 @@ public class TestScript : MonoBehaviour {
 
     string GetLongTextByData(DefaultScrollItemData data)
     {
-        return string.Format("{0}->\n{1}{1}{1}{1}{1}", data.id, Math.Pow(data.id,10));
+        return string.Format("{0}->\n{1}\n", data.id, new string('A', data.id * 5));
     }
 
     DefaultScrollItemData[] testData = new DefaultScrollItemData[] 
