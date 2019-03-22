@@ -23,9 +23,6 @@ namespace AillieoUtils
         }
 
 
-        // about data
-        IList csData;
-
         int m_dataCount = 0;
         ScrollItemWithRect[] managedItems;
 
@@ -82,34 +79,124 @@ namespace AillieoUtils
 
 
         // callbacks for items
-        public Action<RectTransform, SObject> updateFuncCS;
-        public Func<int,Vector2> itemSizeFuncCS;
+        public Action<int, RectTransform> updateFunc;
+        public Func<int,Vector2> itemSizeFunc;
+        public Func<int> itemCoundFunc;
 
         public Action<RectTransform> activateFunc;
         public Action<RectTransform> recycleFunc;
 
 
-        public void SetUpdateFuncCS(Action<RectTransform, SObject> func)
+        public void SetUpdateFunc(Action<int,RectTransform> func)
         {
-            updateFuncCS = func;
+            updateFunc = func;
         }
 
-        public void SetItemSizeFuncCS(Func<int, Vector2> func)
+        public void SetItemSizeFunc(Func<int, Vector2> func)
         {
-            itemSizeFuncCS = func;
+            itemSizeFunc = func;
         }
 
-        public void Init(IList data)
+        public void SetItemCountFunc(Func<int> func)
+        {
+            itemCoundFunc = func;
+        }
+
+        public void Init()
         {
             InitScrollView();
-            UpdateData(data);
+            UpdateData();
         }
 
 
-        public void UpdateData(IList data)
+        public void UpdateData()
         {
-            csData = data;
-            UpdateManagedItems(m_dataCount != data.Count);
+            int newDataCount = 0;
+            if (itemCoundFunc != null)
+            {
+                newDataCount = itemCoundFunc();
+            }
+
+            if (newDataCount != managedItems.Length)
+            {
+                if (newDataCount > managedItems.Length)  //增加
+                {
+                    Array.Resize(ref managedItems, newDataCount);
+                }
+                else //减少
+                {
+                    for (int i = newDataCount; i < m_dataCount; i++)
+                    {
+                        if (managedItems[i].item != null)
+                        {
+                            itemPool.Recycle(managedItems[i].item);
+                            managedItems[i].item = null;
+                        }
+                    }
+                    //Array.Resize(ref managedItems, newDataCount); //减少时保留之前多余的空位
+                }
+                m_dataCount = newDataCount;
+            }
+
+            CacheRect();
+
+            int showCount = Mathf.Min(maxShownCount, m_dataCount);
+            int restCount = showCount;
+
+            bool hasItem, shouldShow;
+            int firstIndex = -1, lastIndex = -1;
+            for (int i = 0; i < m_dataCount && restCount > 0; i++)
+            {
+                hasItem = managedItems[i].item != null;
+                shouldShow = ShouldItemSeenAtIndex(i);
+
+                if (shouldShow)
+                {
+                    restCount--;
+                    if (firstIndex == -1)
+                    {
+                        firstIndex = i;
+                    }
+                    lastIndex = i;
+                }
+
+                if (hasItem && shouldShow)
+                {
+                    // 应显示且已显示
+                    SetDataForItemAtIndex(managedItems[i].item, i);
+                    continue;
+                }
+
+                if (hasItem == shouldShow)
+                {
+                    // 不应显示且未显示
+                    continue;
+                }
+
+                if (hasItem && !shouldShow)
+                {
+                    // 不该显示 但是有
+                    itemPool.Recycle(managedItems[i].item);
+                    managedItems[criticalItemIndex[i]].item = null;
+                    continue;
+                }
+
+                if (shouldShow && !hasItem)
+                {
+                    // 需要显示 但是没有
+                    RectTransform item = itemPool.Get();
+                    OnGetItemForDataIndex(item, i);
+                    managedItems[i].item = item;
+                    continue;
+                }
+
+            }
+
+            // content.localPosition = Vector2.zero;
+            criticalItemIndex[CriticalItemType.UpToHide] = firstIndex;
+            criticalItemIndex[CriticalItemType.DownToHide] = lastIndex;
+            criticalItemIndex[CriticalItemType.UpToShow] = Mathf.Max(firstIndex - 1, 0);
+            criticalItemIndex[CriticalItemType.DownToShow] = Mathf.Min(lastIndex + 1, m_dataCount - 1);
         }
 
         protected override void SetContentAnchoredPosition(Vector2 position)
@@ -335,94 +422,6 @@ namespace AillieoUtils
                 });
         }
 
-        void UpdateManagedItems(bool resize)
-        {
-            if(resize)
-            {
-                int newDataCount = csData.Count;
-
-                if (newDataCount > managedItems.Length)  //增加
-                {
-                    Array.Resize(ref managedItems,newDataCount);
-                }
-                else //减少
-                {
-                    for (int i = newDataCount; i < m_dataCount; i++)
-                    {
-                        if(managedItems[i].item != null)
-                        {
-                            itemPool.Recycle(managedItems[i].item);
-                            managedItems[i].item = null;
-                        }
-                    }
-                    //Array.Resize(ref managedItems, newDataCount); //减少时保留之前多余的空位
-                }
-                m_dataCount = newDataCount;
-            }
-
-            CacheRect();
-            
-            int showCount = Mathf.Min(maxShownCount,m_dataCount);
-            int restCount = showCount;
-
-            bool hasItem, shouldShow;
-            int firstIndex = -1, lastIndex = -1;
-            for (int i = 0; i < m_dataCount && restCount > 0; i++)
-            {
-                hasItem = managedItems[i].item != null;
-                shouldShow = ShouldItemSeenAtIndex(i);
-
-                if (shouldShow)
-                {
-                    restCount--;
-                    if (firstIndex == -1)
-                    {
-                        firstIndex = i;
-                    }
-                    lastIndex = i;
-                }
-
-                if (hasItem && shouldShow)
-                {
-                    // 应显示且已显示
-                    SetDataForItemAtIndex(managedItems[i].item, i);
-                    continue;
-                }
-
-                if (hasItem == shouldShow)
-                {
-                    // 不应显示且未显示
-                    continue;
-                }
-
-                if (hasItem && !shouldShow)
-                {
-                    // 不该显示 但是有
-                    itemPool.Recycle(managedItems[i].item);
-                    managedItems[criticalItemIndex[i]].item = null;
-                    continue;
-                }
-
-                if(shouldShow && !hasItem)
-                {
-                    // 需要显示 但是没有
-                    RectTransform item = itemPool.Get();
-                    OnGetItemForDataIndex(item, i);
-                    managedItems[i].item = item;
-                    continue;
-                }
-
-            }
-
-            // content.localPosition = Vector2.zero;
-            criticalItemIndex[CriticalItemType.UpToHide] = firstIndex;
-            criticalItemIndex[CriticalItemType.DownToHide] = lastIndex;
-            criticalItemIndex[CriticalItemType.UpToShow] = Mathf.Max(firstIndex - 1, 0);
-            criticalItemIndex[CriticalItemType.DownToShow] = Mathf.Min(lastIndex + 1, m_dataCount - 1);
-
-        }
-
-
         void OnGetItemForDataIndex(RectTransform item, int index)
         {
             if (activateFunc != null)
@@ -434,8 +433,8 @@ namespace AillieoUtils
 
         void SetDataForItemAtIndex(RectTransform item, int index)
         {
-            if (updateFuncCS != null && csData != null)
-                updateFuncCS(item, csData[index]);
+            if (updateFunc != null)
+                updateFunc(index,item);
 
             SetPosForItemAtIndex(item,index);
         }
@@ -453,9 +452,9 @@ namespace AillieoUtils
         {
             if(index >= 0 && index <= m_dataCount)
             {
-                        if (itemSizeFuncCS != null)
+                        if (itemSizeFunc != null)
                         {
-                            return itemSizeFuncCS(index);
+                            return itemSizeFunc(index);
                         }
             }
             return defaultItemSize;
@@ -481,6 +480,9 @@ namespace AillieoUtils
 
         }
 
+
+        Vector3[] viewWorldConers = new Vector3[4];
+        Vector3[] rectCorners = new Vector3[2];
         void UpdateRefRect()
         {
             /*
@@ -494,11 +496,7 @@ namespace AillieoUtils
              */
 
             // refRect是在Content节点下的 viewport的 rect
-
-            Vector3[] viewWorldConers = new Vector3[4];
-            Vector3[] rectCorners = new Vector3[2];
             viewRect.GetWorldCorners(viewWorldConers);
-
             rectCorners[0] = content.transform.InverseTransformPoint(viewWorldConers[0]);
             rectCorners[1] = content.transform.InverseTransformPoint(viewWorldConers[2]);
             refRect = new Rect((Vector2)rectCorners[0] - content.anchoredPosition, rectCorners[1] - rectCorners[0]);
