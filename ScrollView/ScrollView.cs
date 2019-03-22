@@ -6,10 +6,6 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using SObject = System.Object;
 
-#if USE_LUA_FRAMEWORK
-using LuaInterface;
-#endif
-
 namespace AillieoUtils
 {
     [RequireComponent(typeof(RectTransform))]
@@ -19,23 +15,16 @@ namespace AillieoUtils
 
         struct ScrollItemWithRect
         {
-            public ScrollItem item;
+            // scroll item 身上的 RectTransform组件
+            public RectTransform item;
+
+            // scroll item 在scrollview中的位置
             public Rect rect;
         }
 
 
         // about data
-        enum DataSourceType
-        {
-            CS = 0,
-            Lua = 1,
-        }
         IList csData;
-#if USE_LUA_FRAMEWORK
-        LuaTable luaData;
-#endif
-        DataSourceType dataType;
-
 
         int m_dataCount = 0;
         ScrollItemWithRect[] managedItems;
@@ -77,7 +66,7 @@ namespace AillieoUtils
 
 
         // resource management
-        SimpleObjPool<ScrollItem> itemPool = null;
+        SimpleObjPool<RectTransform> itemPool = null;
 
         [Tooltip("初始化时池内item数量")]
         public int poolSize;
@@ -89,21 +78,18 @@ namespace AillieoUtils
         public Vector2 defaultItemSize;
 
         [Tooltip("item的模板")]
-        public ScrollItem itemTemplate;
+        public RectTransform itemTemplate;
 
 
         // callbacks for items
-        public Action<ScrollItem, SObject> updateFuncCS;
+        public Action<RectTransform, SObject> updateFuncCS;
         public Func<int,Vector2> itemSizeFuncCS;
-#if USE_LUA_FRAMEWORK
-        public LuaFunction updateFuncLua;
-        public LuaFunction itemSizeFuncLua;
-#endif
-        public Action<ScrollItem> activateFunc;
-        public Action<ScrollItem> recycleFunc;
+
+        public Action<RectTransform> activateFunc;
+        public Action<RectTransform> recycleFunc;
 
 
-        public void SetUpdateFuncCS(Action<ScrollItem, SObject> func)
+        public void SetUpdateFuncCS(Action<RectTransform, SObject> func)
         {
             updateFuncCS = func;
         }
@@ -123,62 +109,8 @@ namespace AillieoUtils
         public void UpdateData(IList data)
         {
             csData = data;
-            dataType = DataSourceType.CS;
             UpdateManagedItems(m_dataCount != data.Count);
         }
-
-
-#if USE_LUA_FRAMEWORK
-        public void SetUpdateFuncLua(LuaFunction func)
-        {
-            if(updateFuncLua != null)
-            {
-                updateFuncLua.Dispose();
-                updateFuncLua = null;
-            }
-            updateFuncLua = func;
-        }
-
-        public void SetItemSizeFuncLua(LuaFunction func)
-        {
-            if (itemSizeFuncLua != null)
-            {
-                itemSizeFuncLua.Dispose();
-                itemSizeFuncLua = null;
-            }
-            itemSizeFuncLua = func;
-        }
-
-        public void Init(LuaTable data)
-        {
-            InitScrollView();
-            UpdateData(data);
-        }
-
-        public void UpdateData(LuaTable data)
-        {
-            if(luaData == null)
-            {
-                luaData = data;
-            }
-            else
-            {
-                if(luaData != data)
-                {
-                    Debug.LogError("不是原来的Luatable 这样不好的");
-                    return;
-                }
-            }
-
-            luaData = data;
-            dataType = DataSourceType.Lua;
-            UpdateManagedItems(m_dataCount != data.Length);
-        }
-
-#endif
-
-
-
 
         protected override void SetContentAnchoredPosition(Vector2 position)
         {
@@ -191,7 +123,7 @@ namespace AillieoUtils
         }
 
 
-        ScrollItem GetCriticalItem(int type)
+        RectTransform GetCriticalItem(int type)
         {
             int index = criticalItemIndex[type];
             if(index >= 0 && index < m_dataCount)
@@ -258,7 +190,7 @@ namespace AillieoUtils
 
         void CheckAndHideItem(int criticalItemType)
         {
-            ScrollItem item = null;
+            RectTransform item = null;
             int criticalIndex = -1;
             while (true)
             {
@@ -293,7 +225,7 @@ namespace AillieoUtils
 
         void CheckAndShowItem(int criticalItemType)
         {
-            ScrollItem item = null;
+            RectTransform item = null;
             int criticalIndex = -1;
 
             while (true)
@@ -305,7 +237,7 @@ namespace AillieoUtils
 
                 if (item == null && ShouldItemSeenAtIndex(criticalIndex))
                 {
-                    ScrollItem newItem = itemPool.Get();
+                    RectTransform newItem = itemPool.Get();
                     OnGetItemForDataIndex(newItem, criticalIndex);
                     //Debug.Log("创建了 " + criticalIndex);
                     managedItems[criticalIndex].item = newItem;
@@ -382,22 +314,21 @@ namespace AillieoUtils
             GameObject poolNode = new GameObject("POOL");
             poolNode.SetActive(false);
             poolNode.transform.SetParent(transform,false);
-            itemPool = new SimpleObjPool<ScrollItem>(
+            itemPool = new SimpleObjPool<RectTransform>(
                 poolSize,
-                (ScrollItem item) => {
+                (RectTransform item) => {
                     if(recycleFunc != null)
                         recycleFunc(item);
                     item.transform.SetParent(poolNode.transform,false);
                 },
                 () => {
                     GameObject itemObj = Instantiate(itemTemplate.gameObject);
-                    ScrollItem item = itemObj.GetComponent<ScrollItem>();
+                    RectTransform item = itemObj.GetComponent<RectTransform>();
                     itemObj.transform.SetParent(poolNode.transform,false);
-                    RectTransform rectTrans = item.rectTransform;
 
-                    rectTrans.anchorMin = Vector2.up;
-                    rectTrans.anchorMax = Vector2.up;
-                    rectTrans.pivot = Vector2.zero;
+                    item.anchorMin = Vector2.up;
+                    item.anchorMax = Vector2.up;
+                    item.pivot = Vector2.zero;
 
                     //rectTrans.pivot = Vector2.up;
                     return item;
@@ -408,11 +339,8 @@ namespace AillieoUtils
         {
             if(resize)
             {
-#if USE_LUA_FRAMEWORK
-                int newDataCount = (dataType == DataSourceType.CS ? csData.Length : luaData.Length);
-#else
                 int newDataCount = csData.Count;
-#endif
+
                 if (newDataCount > managedItems.Length)  //增加
                 {
                     Array.Resize(ref managedItems,newDataCount);
@@ -478,7 +406,7 @@ namespace AillieoUtils
                 if(shouldShow && !hasItem)
                 {
                     // 需要显示 但是没有
-                    ScrollItem item = itemPool.Get();
+                    RectTransform item = itemPool.Get();
                     OnGetItemForDataIndex(item, i);
                     managedItems[i].item = item;
                     continue;
@@ -495,7 +423,7 @@ namespace AillieoUtils
         }
 
 
-        void OnGetItemForDataIndex(ScrollItem item, int index)
+        void OnGetItemForDataIndex(RectTransform item, int index)
         {
             if (activateFunc != null)
                 activateFunc(item);
@@ -504,34 +432,20 @@ namespace AillieoUtils
         }
 
 
-        void SetDataForItemAtIndex(ScrollItem item, int index)
+        void SetDataForItemAtIndex(RectTransform item, int index)
         {
-            switch (dataType)
-            {
-                case DataSourceType.CS:
-                    if (updateFuncCS != null && csData != null)
-                        updateFuncCS(item, csData[index]);
-                    break;
-#if USE_LUA_FRAMEWORK
-                case DataSourceType.Lua:
-                    if (updateFuncLua != null && luaData != null)
-                        updateFuncLua.Call(item, luaData[index + 1]);
-                    break;
-#endif
-                default:
-                    break;
-            }
-            
+            if (updateFuncCS != null && csData != null)
+                updateFuncCS(item, csData[index]);
+
             SetPosForItemAtIndex(item,index);
         }
 
 
-        void SetPosForItemAtIndex(ScrollItem item, int index)
+        void SetPosForItemAtIndex(RectTransform item, int index)
         {
             Rect r = managedItems[index].rect;
-            item.rectTransform.localPosition = r.position;
-            item.rectTransform.sizeDelta = r.size;
-
+            item.localPosition = r.position;
+            item.sizeDelta = r.size;
         }
 
 
@@ -539,25 +453,10 @@ namespace AillieoUtils
         {
             if(index >= 0 && index <= m_dataCount)
             {
-                switch (dataType)
-                {
-                    case DataSourceType.CS:
                         if (itemSizeFuncCS != null)
                         {
                             return itemSizeFuncCS(index);
                         }
-                        break;
-#if USE_LUA_FRAMEWORK
-                    case DataSourceType.Lua:
-                        if (itemSizeFuncLua != null)
-                        {
-                            return (Vector2)(itemSizeFuncLua.Call(index)[0]);
-                        }
-                        break;
-#endif
-                    default:
-                        break;
-                }
             }
             return defaultItemSize;
         }
@@ -670,22 +569,6 @@ namespace AillieoUtils
 
         protected override void OnDestroy()
         {
-#if USE_LUA_FRAMEWORK
-            if (dataType == DataSourceType.Lua && luaData != null)
-            {
-                luaData.Dispose();
-            }
-
-            if (updateFuncLua != null)
-            {
-                updateFuncLua.Dispose();
-            }
-
-            if (itemSizeFuncLua != null)
-            {
-                itemSizeFuncLua.Dispose();
-            }
-#endif
             if (itemPool != null)
             {
                 itemPool.Purge();

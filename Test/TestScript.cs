@@ -8,14 +8,14 @@ using SObject = System.Object;
 
 public class TestScript : MonoBehaviour {
 
-    void updateFunc(ScrollItem item, SObject data)
+    void updateFunc(RectTransform item, SObject data)
     {
         item.gameObject.SetActive(true);
         DefaultScrollItemData sd = (DefaultScrollItemData)data;
         item.transform.Find("Text").GetComponent<Text>().text = string.Format("{0}_{1}", sd.name, sd.id);
     }
 
-    void updateFunc_3(ScrollItem item, SObject data)
+    void updateFunc_3(RectTransform item, SObject data)
     {
         item.gameObject.SetActive(true);
         DefaultScrollItemData sd = (DefaultScrollItemData)data;

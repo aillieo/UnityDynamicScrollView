@@ -1,13 +1,12 @@
-﻿//#define SIMPLE_OBJ_POOL_SAFE_MODE
 using System;
 using System.Collections.Generic;
 
 namespace AillieoUtils
 {
-    public class SimpleObjPool<T> where T : new()
+    public class SimpleObjPool<T>
     {
 
-        private readonly Stack<T> m_Stack = new Stack<T>();
+        private readonly Stack<T> m_Stack;
         private readonly Func<T> m_ctor;
         private readonly Action<T> m_OnRecycle;
         private int m_Size;
@@ -16,6 +15,7 @@ namespace AillieoUtils
 
         public SimpleObjPool(int max = 5, Action<T> actionOnReset = null, Func <T> ctor = null)
         {
+            m_Stack = new Stack<T>(max);
             m_Size = max;
             m_OnRecycle = actionOnReset;
             m_ctor = ctor;
@@ -33,7 +33,7 @@ namespace AillieoUtils
                 }
                 else
                 {
-                    item = new T();
+                    item = default;
                 }
             }
             else
@@ -46,17 +46,7 @@ namespace AillieoUtils
 
         public void Recycle(T item)
         {
-#if SIMPLE_OBJ_POOL_SAFE_MODE
-            if (m_Stack.Count > 0 && ReferenceEquals(m_Stack.Peek(), item))
-            {
-                UnityEngine.Debug.LogError("Recycle failed ...  already recycled");
-                return;
-            }
-#endif
-            if (null != m_OnRecycle)
-            {
-                m_OnRecycle(item);
-            }
+            m_OnRecycle?.Invoke(item);
             if(m_Stack.Count < m_Size)
             {
                 m_Stack.Push(item);
@@ -64,6 +54,15 @@ namespace AillieoUtils
             m_UsedCount -- ;
         }
 
+
+        /*
+        public T GetAndAutoRecycle()
+        {
+            T obj = Get();
+            Utils.OnNextFrameCall(()=> { Recycle(obj); });
+            return obj;
+        }
+        */
 
         public void Purge()
         {
