@@ -79,27 +79,21 @@ public class TestScript : MonoBehaviour {
     }
 
 
-    Text templateText = null;
+    RectTransform template = null;
     Vector2 itemSizeFunc_3(int index)
     {
-        if(templateText == null)
+        if(template == null)
         {
-            InitTemplateText();
+            GameObject go = GameObject.Find("TextItem");
+            template = GameObject.Instantiate(go).GetComponent<RectTransform>();
         }
-        string content = GetLongTextByData((DefaultScrollItemData)testData[index]);
-        templateText.text = content;
-        templateText.CalculateLayoutInputVertical();
-        //templateText.CalculateLayoutInputHorizontal();
-        //return new Vector2(templateText.preferredWidth,templateText.preferredHeight);
-        return new Vector2(300, templateText.preferredHeight);
+        string content = GetLongTextByData(testData[index]);
+        template.GetComponent<Text>().text = content;
+        LayoutRebuilder.ForceRebuildLayoutImmediate(template);
+        float height = LayoutUtility.GetPreferredHeight(template);
+        return new Vector2(300, height);
     }
-    void InitTemplateText()
-    {
-        GameObject go = GameObject.Find("TextItem");
-        Text comp = go.GetComponentInChildren<Text>();
-        templateText = GameObject.Instantiate(comp) as Text;
-    }
-
+    
 
     string GetLongTextByData(DefaultScrollItemData data)
     {
