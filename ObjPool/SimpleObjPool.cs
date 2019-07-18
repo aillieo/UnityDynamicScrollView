@@ -33,7 +33,7 @@ namespace AillieoUtils
                 }
                 else
                 {
-                    item = default;
+                    item = Activator.CreateInstance<T>();
                 }
             }
             else
@@ -46,7 +46,10 @@ namespace AillieoUtils
 
         public void Recycle(T item)
         {
-            m_OnRecycle?.Invoke(item);
+            if(m_OnRecycle!= null)
+            {
+                m_OnRecycle.Invoke(item);
+            }
             if(m_Stack.Count < m_Size)
             {
                 m_Stack.Push(item);
