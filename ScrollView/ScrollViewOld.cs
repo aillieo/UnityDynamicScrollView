@@ -10,8 +10,10 @@ namespace AillieoUtils
 {
     [RequireComponent(typeof(RectTransform))]
     [DisallowMultipleComponent]
-    public class ScrollView : ScrollRect
+    public class ScrollViewOld : ScrollRect
     {
+
+        private bool initialized = false;
 
         private class ScrollItemWithRect
         {
@@ -87,9 +89,6 @@ namespace AillieoUtils
         public Action<RectTransform> activateFunc;
         public Action<RectTransform> recycleFunc;
 
-        // status
-        private bool initialized = false;
-        private bool willUpdateData = false;
 
         public void SetUpdateFunc(Action<int,RectTransform> func)
         {
@@ -106,36 +105,12 @@ namespace AillieoUtils
             itemCoundFunc = func;
         }
 
-        public void UpdateData(bool immediately = true)
+        public void UpdateData()
         {
-            if (!initialized)
+            if(!initialized)
             {
                 InitScrollView();
             }
-            if(immediately)
-            {
-                InternalUpdateData();
-            }
-            else
-            {
-                if(!willUpdateData)
-                {
-                    willUpdateData = true;
-                    StartCoroutine(DelayUpdateData());
-                }
-            }
-        }
-
-        private IEnumerator DelayUpdateData()
-        {
-            yield return null;
-            InternalUpdateData();
-        }
-
-
-        private void InternalUpdateData()
-        {
-            willUpdateData = false;
 
             int newDataCount = 0;
             if (itemCoundFunc != null)
@@ -179,14 +154,13 @@ namespace AillieoUtils
 
             m_dataCount = newDataCount;
 
-            // CacheRect();
+            CacheRect();
 
             int showCount = Mathf.Min(maxShownCount, m_dataCount);
             int restCount = showCount;
 
             bool hasItem, shouldShow;
             int firstIndex = -1, lastIndex = -1;
-
             for (int i = 0; i < m_dataCount && restCount > 0; i++)
             {
                 hasItem = managedItems[i].item != null;
@@ -212,11 +186,6 @@ namespace AillieoUtils
                 if (hasItem == shouldShow)
                 {
                     // 不应显示且未显示
-                    if(firstIndex != -1)
-                    {
-                        // 已经遍历完所有要显示的了 后边的先跳过
-                        break;
-                    }
                     continue;
                 }
 
@@ -244,7 +213,6 @@ namespace AillieoUtils
             criticalItemIndex[CriticalItemType.DownToHide] = lastIndex;
             criticalItemIndex[CriticalItemType.UpToShow] = Mathf.Max(firstIndex - 1, 0);
             criticalItemIndex[CriticalItemType.DownToShow] = Mathf.Min(lastIndex + 1, m_dataCount - 1);
-
         }
 
         protected override void SetContentAnchoredPosition(Vector2 position)
@@ -405,7 +373,7 @@ namespace AillieoUtils
             {
                 return false;
             }
-            EnsureItemRect(index);
+
             return new Rect(refRect.position - content.anchoredPosition, refRect.size).Overlaps(managedItems[index].rect);
         }
 
@@ -415,7 +383,6 @@ namespace AillieoUtils
             {
                 return false;
             }
-            EnsureItemRect(index);
             return IsRectContains(new Rect(refRect.position - content.anchoredPosition, refRect.size),(managedItems[index].rect));
         }
 
@@ -492,7 +459,6 @@ namespace AillieoUtils
 
         void SetPosForItemAtIndex(RectTransform item, int index)
         {
-            EnsureItemRect(index);
             Rect r = managedItems[index].rect;
             item.localPosition = r.position;
             item.sizeDelta = r.size;
@@ -613,79 +579,6 @@ namespace AillieoUtils
                     break;
             }
         }
-
-        void EnsureItemRect(int index)
-        {
-            if (!managedItems[index].rectDirty)
-            {
-                // 已经是干净的了
-                return;
-            }
-
-            ScrollItemWithRect firstItem = managedItems[0];
-            if(firstItem.rectDirty)
-            {
-                Vector2 firstSize = GetItemSize(0);
-                firstItem.rect = CreateWithLeftTopAndSize(Vector2.zero, firstSize);
-                firstItem.rectDirty = false;
-            }
-
-            // 当前item之前的最近的已更新的rect
-            int nearestClean = 0;
-            for (int i = index; i >= 0; --i)
-            {
-                if(!managedItems[i].rectDirty)
-                {
-                    nearestClean = i;
-                    break;
-                }
-            }
-
-            // 需要更新 从 nearestClean 到 index 的尺寸
-            Rect nearestCleanRect = managedItems[nearestClean].rect;
-            Vector2 curPos = GetLeftTop(nearestCleanRect);
-            Vector2 size = nearestCleanRect.size;
-            MovePos(ref curPos, size);
-
-            for (int i = nearestClean + 1; i <= index; i++)
-            {
-                size = GetItemSize(i);
-                managedItems[i].rect = CreateWithLeftTopAndSize(curPos,size);
-                managedItems[i].rectDirty = false;
-                MovePos(ref curPos, size);
-            }
-            Vector2 range = new Vector2(Mathf.Abs(curPos.x), Mathf.Abs(curPos.y));
-            switch (layoutType)
-            {
-                case ItemLayoutType.VerticalThenHorizontal:
-                    range.x += size.x;
-                    range.y = refRect.height;
-                    break;
-                case ItemLayoutType.HorizontalThenVertical:
-                    range.x = refRect.width;
-                    if (curPos.x != 0)
-                    {
-                        range.y += size.y;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            content.sizeDelta = range;
-        }
-
-        private static Vector2 GetLeftTop(Rect rect)
-        {
-            Vector2 ret = rect.position;
-            ret.y += rect.size.y;
-            return ret;
-        }
-        private static Rect CreateWithLeftTopAndSize(Vector2 leftTop, Vector2 size)
-        {
-            Vector2 leftBottom = leftTop - new Vector2(0,size.y);
-            return new Rect(leftBottom,size);
-        }
-
 
         protected override void OnDestroy()
         {
