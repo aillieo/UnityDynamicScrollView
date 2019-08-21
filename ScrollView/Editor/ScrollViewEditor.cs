@@ -12,7 +12,6 @@ namespace AillieoUtils
 
         SerializedProperty itemTemplate;
         SerializedProperty poolSize;
-        SerializedProperty maxShownCount;
         SerializedProperty defaultItemSize;
         SerializedProperty layoutType;
 
@@ -23,7 +22,6 @@ namespace AillieoUtils
 
             itemTemplate = serializedObject.FindProperty("itemTemplate");
             poolSize = serializedObject.FindProperty("poolSize");
-            maxShownCount = serializedObject.FindProperty("maxShownCount");
             defaultItemSize = serializedObject.FindProperty("defaultItemSize");
             layoutType = serializedObject.FindProperty("m_layoutType");
         }
@@ -41,7 +39,6 @@ namespace AillieoUtils
 
             EditorGUILayout.PropertyField(itemTemplate);
             EditorGUILayout.PropertyField(poolSize);
-            EditorGUILayout.PropertyField(maxShownCount);
             EditorGUILayout.PropertyField(defaultItemSize);
             layoutType.intValue = (int)(ScrollView.ItemLayoutType)EditorGUILayout.EnumPopup("layoutType", (ScrollView.ItemLayoutType)layoutType.intValue);
 

@@ -69,9 +69,6 @@ namespace AillieoUtils
         [Tooltip("初始化时池内item数量")]
         public int poolSize;
 
-        [Tooltip("同时展示的item数量")]
-        public int maxShownCount;
-
         [Tooltip("默认item尺寸")]
         public Vector2 defaultItemSize;
 
@@ -124,6 +121,30 @@ namespace AillieoUtils
                     StartCoroutine(DelayUpdateData());
                 }
             }
+        }
+
+        public void ScrollTo(int index)
+        {
+            index = Mathf.Clamp(index,0,m_dataCount - 1);
+            EnsureItemRect(index);
+            Rect r = managedItems[index].rect;
+            int dir = (int)layoutType & flagScrollDirection;
+            if(dir == 1)
+            {
+                // vertical
+                float value = 1 - (- r.yMax / (content.sizeDelta.y - refRect.height));
+                value = Mathf.Clamp01(value);
+                SetNormalizedPosition(value, 1);
+            }
+            else
+            {
+                // horizontal
+                float value = r.xMin / (content.sizeDelta.x - refRect.width);
+                value = Mathf.Clamp01(value);
+                SetNormalizedPosition(value, 0);
+            }
+
+            ResetCriticalItems();
         }
 
         private IEnumerator DelayUpdateData()
@@ -179,22 +200,22 @@ namespace AillieoUtils
 
             m_dataCount = newDataCount;
 
-            // CacheRect();
+            ResetCriticalItems();
+        
+        }
 
-            int showCount = Mathf.Min(maxShownCount, m_dataCount);
-            int restCount = showCount;
-
+        void ResetCriticalItems()
+        {
             bool hasItem, shouldShow;
             int firstIndex = -1, lastIndex = -1;
 
-            for (int i = 0; i < m_dataCount && restCount > 0; i++)
+            for (int i = 0; i < m_dataCount; i++)
             {
                 hasItem = managedItems[i].item != null;
                 shouldShow = ShouldItemSeenAtIndex(i);
 
                 if (shouldShow)
                 {
-                    restCount--;
                     if (firstIndex == -1)
                     {
                         firstIndex = i;
@@ -212,7 +233,7 @@ namespace AillieoUtils
                 if (hasItem == shouldShow)
                 {
                     // 不应显示且未显示
-                    if(firstIndex != -1)
+                    if (firstIndex != -1)
                     {
                         // 已经遍历完所有要显示的了 后边的先跳过
                         break;
@@ -551,35 +572,6 @@ namespace AillieoUtils
             refRect = new Rect((Vector2)rectCorners[0] - content.anchoredPosition, rectCorners[1] - rectCorners[0]);
         }
 
-        void CacheRect()
-        {
-            Vector2 curPos = Vector2.zero, size = Vector2.zero;
-            for(int i = 0; i < m_dataCount; i ++)
-            {
-                size = GetItemSize(i);
-                managedItems[i].rect = new Rect(curPos.x,curPos.y-size.y,size.x,size.y); // 改为lazy计算
-                MovePos(ref curPos, size);
-            }
-            Vector2 range = new Vector2(Mathf.Abs(curPos.x), Mathf.Abs(curPos.y));
-            switch (layoutType)
-            {
-                case ItemLayoutType.VerticalThenHorizontal:
-                    range.x += size.x;
-                    range.y = refRect.height;
-                    break;
-                case ItemLayoutType.HorizontalThenVertical:
-                    range.x = refRect.width;
-                    if (curPos.x != 0)
-                    {
-                        range.y += size.y;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            content.sizeDelta = range;
-        }
-
         void MovePos(ref Vector2 pos, Vector2 size)
         {
             // 注意 所有的rect都是左下角为基准
@@ -694,7 +686,6 @@ namespace AillieoUtils
                 itemPool.Purge();
             }
         }
-
 
     }
 
