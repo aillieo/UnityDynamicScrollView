@@ -75,14 +75,12 @@ namespace AillieoUtils
         [Tooltip("item的模板")]
         public RectTransform itemTemplate;
 
-
         // callbacks for items
         public Action<int, RectTransform> updateFunc;
         public Func<int,Vector2> itemSizeFunc;
-        public Func<int> itemCoundFunc;
-
-        public Action<RectTransform> activateFunc;
-        public Action<RectTransform> recycleFunc;
+        public Func<int> itemCountFunc;
+        public Func<int, RectTransform> itemGetFunc;
+        public Action<RectTransform> itemRecycleFunc;
 
         // status
         private bool initialized = false;
@@ -100,7 +98,16 @@ namespace AillieoUtils
 
         public void SetItemCountFunc(Func<int> func)
         {
-            itemCoundFunc = func;
+            itemCountFunc = func;
+        }
+
+        public void SetItemGetAndRecycleFunc(Func<int, RectTransform> getFunc, Action<RectTransform> recycleFunc)
+        {
+            if(getFunc != null && recycleFunc != null)
+            {
+                itemGetFunc = getFunc;
+                itemRecycleFunc = recycleFunc;
+            }
         }
 
         public void UpdateData(bool immediately = true)
@@ -159,9 +166,9 @@ namespace AillieoUtils
             willUpdateData = false;
 
             int newDataCount = 0;
-            if (itemCoundFunc != null)
+            if (itemCountFunc != null)
             {
-                newDataCount = itemCoundFunc();
+                newDataCount = itemCountFunc();
             }
 
             if (newDataCount != managedItems.Count)
@@ -190,7 +197,7 @@ namespace AillieoUtils
                         {
                             if (managedItems[i].item != null)
                             {
-                                itemPool.Recycle(managedItems[i].item);
+                                RecycleOldItem(managedItems[i].item);
                                 managedItems[i].item = null;
                             }
                         }
@@ -244,7 +251,7 @@ namespace AillieoUtils
                 if (hasItem && !shouldShow)
                 {
                     // 不该显示 但是有
-                    itemPool.Recycle(managedItems[i].item);
+                    RecycleOldItem(managedItems[i].item);
                     managedItems[i].item = null;
                     continue;
                 }
@@ -252,7 +259,7 @@ namespace AillieoUtils
                 if (shouldShow && !hasItem)
                 {
                     // 需要显示 但是没有
-                    RectTransform item = itemPool.Get();
+                    RectTransform item = GetNewItem(i);
                     OnGetItemForDataIndex(item, i);
                     managedItems[i].item = item;
                     continue;
@@ -354,7 +361,7 @@ namespace AillieoUtils
                 criticalIndex = criticalItemIndex[criticalItemType];
                 if (item != null && !ShouldItemSeenAtIndex(criticalIndex))
                 {
-                    itemPool.Recycle(item);
+                    RecycleOldItem(item);
                     managedItems[criticalIndex].item = null;
                     //Debug.Log("回收了 " + criticalIndex);
                     criticalItemIndex[criticalItemType + 2] = criticalIndex;
@@ -393,7 +400,7 @@ namespace AillieoUtils
 
                 if (item == null && ShouldItemSeenAtIndex(criticalIndex))
                 {
-                    RectTransform newItem = itemPool.Get();
+                    RectTransform newItem = GetNewItem(criticalIndex);
                     OnGetItemForDataIndex(newItem, criticalIndex);
                     //Debug.Log("创建了 " + criticalIndex);
                     managedItems[criticalIndex].item = newItem;
@@ -474,8 +481,6 @@ namespace AillieoUtils
             itemPool = new SimpleObjPool<RectTransform>(
                 poolSize,
                 (RectTransform item) => {
-                    if(recycleFunc != null)
-                        recycleFunc(item);
                     item.transform.SetParent(poolNode.transform,false);
                 },
                 () => {
@@ -495,8 +500,6 @@ namespace AillieoUtils
 
         void OnGetItemForDataIndex(RectTransform item, int index)
         {
-            if (activateFunc != null)
-                activateFunc(item);
             SetDataForItemAtIndex(item, index);
             item.transform.SetParent(content, false);
         }
@@ -532,6 +535,31 @@ namespace AillieoUtils
             return defaultItemSize;
         }
 
+        private RectTransform GetNewItem(int index)
+        {
+            RectTransform item;
+            if(itemGetFunc != null)
+            {
+                item = itemGetFunc(index);
+            }
+            else
+            {
+                item = itemPool.Get();
+            }
+            return item;
+        }
+
+        private void RecycleOldItem(RectTransform item)
+        {
+            if (itemRecycleFunc != null)
+            {
+                itemRecycleFunc(item);
+            }
+            else
+            {
+                itemPool.Recycle(item);
+            }
+        }
 
         void InitScrollView()
         {
