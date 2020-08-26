@@ -150,8 +150,6 @@ namespace AillieoUtils
                 value = Mathf.Clamp01(value);
                 SetNormalizedPosition(value, 0);
             }
-
-            ResetCriticalItems();
         }
 
         private IEnumerator DelayUpdateData()
@@ -285,6 +283,11 @@ namespace AillieoUtils
             UpdateCriticalItems();
         }
 
+        protected override void SetNormalizedPosition(float value, int axis)
+        {
+            base.SetNormalizedPosition(value, axis);
+            ResetCriticalItems();
+        }
 
         RectTransform GetCriticalItem(int type)
         {
