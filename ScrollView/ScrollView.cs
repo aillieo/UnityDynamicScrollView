@@ -37,16 +37,16 @@ namespace AillieoUtils
             VerticalThenHorizontal = 4,     // 0100
             HorizontalThenVertical = 5,     // 0101
         }
-        const int flagScrollDirection = 1;  // 0001
+        public const int flagScrollDirection = 1;  // 0001
 
 
         [SerializeField]
         ItemLayoutType m_layoutType = ItemLayoutType.Vertical;
-        ItemLayoutType layoutType { get { return m_layoutType; } }
+        protected ItemLayoutType layoutType { get { return m_layoutType; } }
 
 
         // const int 代替 enum 减少 (int)和(CriticalItemType)转换
-        static class CriticalItemType
+        protected static class CriticalItemType
         {
             public const int UpToHide = 0;
             public const int DownToHide = 1;
@@ -54,7 +54,7 @@ namespace AillieoUtils
             public const int DownToShow = 3;
         }
         // 只保存4个临界index
-        int[] criticalItemIndex = new int[4];
+        protected int[] criticalItemIndex = new int[4];
         Rect refRect;
 
 
@@ -86,17 +86,17 @@ namespace AillieoUtils
         private bool initialized = false;
         private bool willUpdateData = false;
 
-        public void SetUpdateFunc(Action<int,RectTransform> func)
+        public virtual void SetUpdateFunc(Action<int,RectTransform> func)
         {
             updateFunc = func;
         }
 
-        public void SetItemSizeFunc(Func<int, Vector2> func)
+        public virtual void SetItemSizeFunc(Func<int, Vector2> func)
         {
             itemSizeFunc = func;
         }
 
-        public void SetItemCountFunc(Func<int> func)
+        public virtual void SetItemCountFunc(Func<int> func)
         {
             itemCountFunc = func;
         }
@@ -185,7 +185,7 @@ namespace AillieoUtils
                 }
                 else //减少 保留空位 避免GC
                 {
-                    for(int i = 0, count = managedItems.Count; i < count; ++i)
+                    for (int i = 0, count = managedItems.Count; i < count; ++i)
                     {
                         // 重置所有rect
                         managedItems[i].rectDirty = true;
@@ -200,6 +200,14 @@ namespace AillieoUtils
                             }
                         }
                     }
+                }
+            }
+            else
+            {
+                for (int i = 0, count = managedItems.Count; i < count; ++i)
+                {
+                    // 重置所有rect
+                    managedItems[i].rectDirty = true;
                 }
             }
 
@@ -718,6 +726,15 @@ namespace AillieoUtils
             }
         }
 
+        protected Rect GetItemLocalRect(int index)
+        {
+            if(index >= 0 && index < m_dataCount)
+            {
+                EnsureItemRect(index);
+                return managedItems[index].rect;
+            }
+            return new Rect();
+        }
     }
 
 }

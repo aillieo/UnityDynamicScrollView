@@ -25,40 +25,45 @@ namespace AillieoUtils
             defaultItemSize = serializedObject.FindProperty("defaultItemSize");
             layoutType = serializedObject.FindProperty("m_layoutType");
         }
-        
+
+        GUIStyle m_caption;
+        GUIStyle caption 
+        {
+            get
+            {
+                if(m_caption == null)
+                {
+                    m_caption = new GUIStyle { richText = true, alignment = TextAnchor.MiddleCenter };
+                }
+                return m_caption;
+            }
+        }
 
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
 
-            EditorGUILayout.Separator();
+            EditorGUILayout.BeginVertical("box");
+            EditorGUILayout.LabelField("<b>Additional configs</b>", caption);
+            EditorGUILayout.Space(5);
+            DrawConfigInfo();
+            serializedObject.ApplyModifiedProperties();
+            EditorGUILayout.EndVertical();
 
-            EditorGUILayout.LabelField("<color=#0000FF><b>Additional configs</b></color>", new GUIStyle { richText = true });
-
-            EditorGUI.indentLevel++;
-
+            EditorGUILayout.BeginVertical("box");
+            EditorGUILayout.LabelField("<b>For original ScrollRect</b>", caption);
+            EditorGUILayout.Space(5);
+            base.OnInspectorGUI();
+            EditorGUILayout.EndVertical();
+        }
+        
+        protected virtual void DrawConfigInfo()
+        {
             EditorGUILayout.PropertyField(itemTemplate);
             EditorGUILayout.PropertyField(poolSize);
             EditorGUILayout.PropertyField(defaultItemSize);
             layoutType.intValue = (int)(ScrollView.ItemLayoutType)EditorGUILayout.EnumPopup("layoutType", (ScrollView.ItemLayoutType)layoutType.intValue);
-
-
-            serializedObject.ApplyModifiedProperties();
-
-            EditorGUILayout.Separator();
-            
-            EditorGUI.indentLevel--;
-
-            EditorGUILayout.LabelField("<color=#0000FF><b>For original ScrollRect</b></color>", new GUIStyle { richText = true });
-
-            EditorGUI.indentLevel++;
-
-            base.OnInspectorGUI();
-
-            EditorGUI.indentLevel--;
-
         }
-        
 
 
 
@@ -75,10 +80,15 @@ namespace AillieoUtils
 
 
 
-        [MenuItem("GameObject/UI/Dynamic Scroll View", false, 90)]
+        [MenuItem("GameObject/UI/ScrollView", false, 90)]
         static public void AddScrollView(MenuCommand menuCommand)
         {
-            GameObject root = CreateUIElementRoot("Dynamic Scroll View", new Vector2(200, 200));
+            InternalAddScrollView<ScrollView>(menuCommand);
+        }
+
+        protected static void InternalAddScrollView<T>(MenuCommand menuCommand) where T : ScrollView
+        {
+            GameObject root = CreateUIElementRoot(typeof(T).Name, new Vector2(200, 200));
 
             GameObject viewport = CreateUIObject("Viewport", root);
             GameObject content = CreateUIObject("Content", viewport);
@@ -125,7 +135,7 @@ namespace AillieoUtils
             contentRect.sizeDelta = new Vector2(0, 300);
             contentRect.pivot = Vector2.up;
 
-            ScrollView scrollRect = root.AddComponent<ScrollView>();
+            ScrollView scrollRect = root.AddComponent<T>();
             scrollRect.content = contentRect;
             scrollRect.viewport = viewportRect;
             scrollRect.horizontalScrollbar = hScrollbar.GetComponent<Scrollbar>();
@@ -182,7 +192,6 @@ namespace AillieoUtils
 
             return scrollbarRoot;
         }
-
 
         static GameObject CreateUIElementRoot(string name, Vector2 size)
         {
