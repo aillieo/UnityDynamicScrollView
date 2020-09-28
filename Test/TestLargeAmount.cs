@@ -4,9 +4,6 @@ using UnityEngine;
 using System;
 using AillieoUtils;
 using UnityEngine.UI;
-using SObject = System.Object;
-using System.Text;
-using System.Diagnostics;
 
 public class TestLargeAmount : MonoBehaviour {
 
@@ -21,9 +18,7 @@ public class TestLargeAmount : MonoBehaviour {
 
     Vector2 itemSizeFunc(int index)
     {
-        // TimeConsumingFunc();
-        // test =====================================================================================
-
+        TimeConsumingFunc();
 
         DefaultScrollItemData sd = testData[index];
         if (sd.name == "XXL")
@@ -43,13 +38,17 @@ public class TestLargeAmount : MonoBehaviour {
         return testData.Count;
     }
 
-    public ScrollViewEx scrollView;
+    public ScrollView scrollView;
+    public ScrollViewEx scrollViewEx;
 
     void Start () {
 
         scrollView.SetUpdateFunc(updateFunc);
         scrollView.SetItemSizeFunc(itemSizeFunc);
         scrollView.SetItemCountFunc(itemCountFunc);
+        scrollViewEx.SetUpdateFunc(updateFunc);
+        scrollViewEx.SetItemSizeFunc(itemSizeFunc);
+        scrollViewEx.SetItemCountFunc(itemCountFunc);
 
         int dataCount = 0;
         do
@@ -59,6 +58,7 @@ public class TestLargeAmount : MonoBehaviour {
         while (++dataCount < 50000);
 
         scrollView.UpdateData(false);
+        scrollViewEx.UpdateData(false);
     }
 
     static string GetRandomSizeString()
@@ -89,8 +89,8 @@ public class TestLargeAmount : MonoBehaviour {
     private void TimeConsumingFunc()
     {
         string s = string.Empty;
-        int a = UnityEngine.Random.Range(0, 10000);
-        int b = UnityEngine.Random.Range(0, 10000);
+        int a = UnityEngine.Random.Range(0, 1000);
+        int b = UnityEngine.Random.Range(0, 1000);
 
         for (int i = a; i < a + b; ++ i)
         {
@@ -102,7 +102,9 @@ public class TestLargeAmount : MonoBehaviour {
     {
         DefaultScrollItemData newData = new DefaultScrollItemData() { name = GetRandomSizeString()};
         testData.Insert(UnityEngine.Random.Range(0,testData.Count), newData);
+
         scrollView.UpdateData(false);
+        scrollViewEx.UpdateData(false);
     }
 
     public void RemoveRandomData()
@@ -113,18 +115,16 @@ public class TestLargeAmount : MonoBehaviour {
         }
         int index = UnityEngine.Random.Range(0, testData.Count);
         testData.RemoveAt(index);
+        
         scrollView.UpdateData(false);
+        scrollViewEx.UpdateData(false);
     }
 
     public void ScrollToRandom()
     {
         int index = UnityEngine.Random.Range(0, testData.Count);
 
-        // test =====================================================================================
-        // always last
-        index = testData.Count - 1;
-
         scrollView.ScrollTo(index);
-        scrollView.UpdateData(false);
+        scrollViewEx.ScrollTo(index);
     }
 }

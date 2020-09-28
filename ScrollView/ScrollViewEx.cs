@@ -23,7 +23,7 @@ namespace AillieoUtils
 
         public int pageSize => m_pageSize;
 
-        private int startOffset = 500;
+        private int startOffset = 0;
 
         private Func<int> realItemCountFunc;
 
@@ -60,6 +60,20 @@ namespace AillieoUtils
                 func = () => Mathf.Min(f(), pageSize);
             }
             base.SetItemCountFunc(func);
+        }
+
+        protected override void InternalScrollTo(int index)
+        {
+            int count = 0;
+            if (realItemCountFunc != null)
+            {
+                count = realItemCountFunc();
+            }
+            index = Mathf.Clamp(index, 0, count - 1);
+            startOffset = Mathf.Clamp(index - pageSize / 2, 0, count - itemCountFunc());
+            UpdateData(true);
+            //Debug.LogError($"index={index} startOffset={startOffset} first={index - startOffset}");
+            base.InternalScrollTo(index - startOffset);
         }
 
         private void OnValueChanged(Vector2 position)
@@ -145,18 +159,25 @@ namespace AillieoUtils
 
             if (old != startOffset)
             {
-                if(downward)
-                {
-
-                }
-
-
                 // 记录 原先的速度
                 Vector2 oldVelocity = velocity;
                 // 计算 pin元素的世界坐标
                 Rect rect = GetItemLocalRect(pin);
                 Vector2 oldWorld = content.TransformPoint(rect.position);
                 UpdateData(true);
+                int dataCount = 0;
+                if(itemCountFunc != null)
+                {
+                    dataCount = itemCountFunc();
+                }
+                if(dataCount > 0)
+                {
+                    EnsureItemRect(0);
+                    if(dataCount > 1)
+                    {
+                        EnsureItemRect(dataCount - 1);
+                    }
+                }
                 // 根据 pin元素的世界坐标 计算出content的position
                 int pin2 = pin + old - startOffset;
                 Rect rect2 = GetItemLocalRect(pin2);
