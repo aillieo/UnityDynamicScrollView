@@ -57,12 +57,6 @@ namespace AillieoUtils
         protected int[] criticalItemIndex = new int[4];
         Rect refRect;
 
-
-        // 当前移动方向
-        Vector2 m_prevPosition;
-        Vector2 m_curDelta;
-
-
         // resource management
         SimpleObjPool<RectTransform> itemPool = null;
 
@@ -132,22 +126,27 @@ namespace AillieoUtils
 
         public void ScrollTo(int index)
         {
-            index = Mathf.Clamp(index,0,m_dataCount - 1);
+            InternalScrollTo(index);
+        }
+
+        protected virtual void InternalScrollTo(int index)
+        {
+            index = Mathf.Clamp(index, 0, m_dataCount - 1);
             EnsureItemRect(index);
             Rect r = managedItems[index].rect;
             int dir = (int)layoutType & flagScrollDirection;
-            if(dir == 1)
+            if (dir == 1)
             {
                 // vertical
-                float value = 1 - (- r.yMax / (content.sizeDelta.y - refRect.height));
-                value = Mathf.Clamp01(value);
+                float value = 1 - (-r.yMax / (content.sizeDelta.y - refRect.height));
+                //value = Mathf.Clamp01(value);
                 SetNormalizedPosition(value, 1);
             }
             else
             {
                 // horizontal
                 float value = r.xMin / (content.sizeDelta.x - refRect.width);
-                value = Mathf.Clamp01(value);
+                //value = Mathf.Clamp01(value);
                 SetNormalizedPosition(value, 0);
             }
         }
@@ -284,10 +283,6 @@ namespace AillieoUtils
         protected override void SetContentAnchoredPosition(Vector2 position)
         {
             base.SetContentAnchoredPosition(position);
-
-            m_curDelta = content.anchoredPosition - m_prevPosition;
-            m_prevPosition = content.anchoredPosition;
-
             UpdateCriticalItems();
         }
 
@@ -314,22 +309,22 @@ namespace AillieoUtils
 
             if (dir == 1)
             {
-                if (m_curDelta[dir] > 0)
+                if (velocity[dir] > 0)
                 {
                     return type == CriticalItemType.UpToHide || type == CriticalItemType.DownToShow;
                 }
-                else if (m_curDelta[dir] < 0)
+                else if (velocity[dir] < 0)
                 {
                     return type == CriticalItemType.DownToHide || type == CriticalItemType.UpToShow;
                 }
             }
             else // dir == 0
             {
-                if (m_curDelta[dir] < 0)
+                if (velocity[dir] < 0)
                 {
                     return type == CriticalItemType.UpToHide || type == CriticalItemType.DownToShow;
                 }
-                else if (m_curDelta[dir] > 0)
+                else if (velocity[dir] > 0)
                 {
                     return type == CriticalItemType.DownToHide || type == CriticalItemType.UpToShow;
                 }
@@ -362,7 +357,7 @@ namespace AillieoUtils
         }
 
 
-        void CheckAndHideItem(int criticalItemType)
+        protected void CheckAndHideItem(int criticalItemType)
         {
             RectTransform item = null;
             int criticalIndex = -1;
@@ -397,7 +392,7 @@ namespace AillieoUtils
         }
 
 
-        void CheckAndShowItem(int criticalItemType)
+        protected void CheckAndShowItem(int criticalItemType)
         {
             RectTransform item = null;
             int criticalIndex = -1;
@@ -584,9 +579,6 @@ namespace AillieoUtils
             content.pivot = Vector2.up;
             InitPool();
             UpdateRefRect();
-
-            m_curDelta = content.anchoredPosition - m_prevPosition;
-            m_prevPosition = content.anchoredPosition;
         }
 
 
@@ -645,7 +637,7 @@ namespace AillieoUtils
             }
         }
 
-        void EnsureItemRect(int index)
+        protected void EnsureItemRect(int index)
         {
             if (!managedItems[index].rectDirty)
             {
