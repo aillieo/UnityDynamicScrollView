@@ -302,134 +302,87 @@ namespace AillieoUtils
             return null;
         }
 
-
-        bool IsCriticalItemTypeValid(int type)
+        void UpdateCriticalItems()
         {
-            int dir = (int)layoutType & flagScrollDirection;
+            bool dirty = true;
 
-            if (dir == 1)
+            while (dirty)
             {
-                if (velocity[dir] > 0)
+                dirty = false;
+
+                for (int i = CriticalItemType.UpToHide; i <= CriticalItemType.DownToShow; i ++)
                 {
-                    return type == CriticalItemType.UpToHide || type == CriticalItemType.DownToShow;
-                }
-                else if (velocity[dir] < 0)
-                {
-                    return type == CriticalItemType.DownToHide || type == CriticalItemType.UpToShow;
+                    if(i <= CriticalItemType.DownToHide) //隐藏离开可见区域的item
+                    {
+                        dirty = dirty || CheckAndHideItem(i);
+                    }
+                    else  //显示进入可见区域的item
+                    {
+                        dirty = dirty || CheckAndShowItem(i);
+                    }
                 }
             }
-            else // dir == 0
-            {
-                if (velocity[dir] < 0)
-                {
-                    return type == CriticalItemType.UpToHide || type == CriticalItemType.DownToShow;
-                }
-                else if (velocity[dir] > 0)
-                {
-                    return type == CriticalItemType.DownToHide || type == CriticalItemType.UpToShow;
-                }
-            }
+        }
 
+
+        private bool CheckAndHideItem(int criticalItemType)
+        {
+            RectTransform item = GetCriticalItem(criticalItemType);
+            int criticalIndex = criticalItemIndex[criticalItemType];
+            if (item != null && !ShouldItemSeenAtIndex(criticalIndex))
+            {
+                RecycleOldItem(item);
+                managedItems[criticalIndex].item = null;
+                //Debug.Log("回收了 " + criticalIndex);
+                criticalItemIndex[criticalItemType + 2] = criticalIndex;
+                if (criticalItemType == CriticalItemType.UpToHide)
+                {
+                    // 最上隐藏了一个
+                    criticalItemIndex[criticalItemType]++;
+                }
+                else
+                {
+                    // 最下隐藏了一个
+                    criticalItemIndex[criticalItemType]--;
+                }
+                criticalItemIndex[criticalItemType] = Mathf.Clamp(criticalItemIndex[criticalItemType], 0, m_dataCount - 1);
+                return true;
+            }
+            
             return false;
         }
 
 
-        void UpdateCriticalItems()
+        private bool CheckAndShowItem(int criticalItemType)
         {
-            //Debug.LogWarning((m_curDelta.y > 0 ? "↑↑" : "↓↓") + " criticalItemIndex = {" + criticalItemIndex[0] + " " + criticalItemIndex[1] + " " + criticalItemIndex[2] + " " + criticalItemIndex[3] + "}");
+            RectTransform item = GetCriticalItem(criticalItemType);
+            int criticalIndex = criticalItemIndex[criticalItemType];
+            
+            //if (item == null && ShouldItemFullySeenAtIndex(criticalItemIndex[criticalItemType - 2]))
 
-            for (int i = CriticalItemType.UpToHide; i <= CriticalItemType.DownToShow; i ++)
+            if (item == null && ShouldItemSeenAtIndex(criticalIndex))
             {
-                if(!IsCriticalItemTypeValid(i))
-                {
-                    continue;
-                }
+                RectTransform newItem = GetNewItem(criticalIndex);
+                OnGetItemForDataIndex(newItem, criticalIndex);
+                //Debug.Log("创建了 " + criticalIndex);
+                managedItems[criticalIndex].item = newItem;
 
-                if(i <= CriticalItemType.DownToHide) //隐藏离开可见区域的item
-                {
-                    CheckAndHideItem(i);
-                }
-                else  //显示进入可见区域的item
-                {
-                    CheckAndShowItem(i);
-                }
-            }
-        }
+                criticalItemIndex[criticalItemType - 2] = criticalIndex;
 
-
-        protected void CheckAndHideItem(int criticalItemType)
-        {
-            RectTransform item = null;
-            int criticalIndex = -1;
-            while (true)
-            {
-                item = GetCriticalItem(criticalItemType);
-                criticalIndex = criticalItemIndex[criticalItemType];
-                if (item != null && !ShouldItemSeenAtIndex(criticalIndex))
+                if (criticalItemType == CriticalItemType.UpToShow)
                 {
-                    RecycleOldItem(item);
-                    managedItems[criticalIndex].item = null;
-                    //Debug.Log("回收了 " + criticalIndex);
-                    criticalItemIndex[criticalItemType + 2] = criticalIndex;
-                    if (criticalItemType == CriticalItemType.UpToHide)
-                    {
-                        // 最上隐藏了一个
-                        criticalItemIndex[criticalItemType]++;
-                    }
-                    else
-                    {
-                        // 最下隐藏了一个
-                        criticalItemIndex[criticalItemType]--;
-                    }
-                    criticalItemIndex[criticalItemType] = Mathf.Clamp(criticalItemIndex[criticalItemType], 0, m_dataCount - 1);
+                    // 最上显示了一个
+                    criticalItemIndex[criticalItemType]--;
                 }
                 else
                 {
-                    break;
+                    // 最下显示了一个
+                    criticalItemIndex[criticalItemType]++;
                 }
-
+                criticalItemIndex[criticalItemType] = Mathf.Clamp(criticalItemIndex[criticalItemType], 0, m_dataCount - 1);
+                return true;
             }
-        }
-
-
-        protected void CheckAndShowItem(int criticalItemType)
-        {
-            RectTransform item = null;
-            int criticalIndex = -1;
-
-            while (true)
-            {
-                item = GetCriticalItem(criticalItemType);
-                criticalIndex = criticalItemIndex[criticalItemType];
-                
-                //if (item == null && ShouldItemFullySeenAtIndex(criticalItemIndex[criticalItemType - 2]))
-
-                if (item == null && ShouldItemSeenAtIndex(criticalIndex))
-                {
-                    RectTransform newItem = GetNewItem(criticalIndex);
-                    OnGetItemForDataIndex(newItem, criticalIndex);
-                    //Debug.Log("创建了 " + criticalIndex);
-                    managedItems[criticalIndex].item = newItem;
-
-                    criticalItemIndex[criticalItemType - 2] = criticalIndex;
-
-                    if (criticalItemType == CriticalItemType.UpToShow)
-                    {
-                        // 最上显示了一个
-                        criticalItemIndex[criticalItemType]--;
-                    }
-                    else
-                    {
-                        // 最下显示了一个
-                        criticalItemIndex[criticalItemType]++;
-                    }
-                    criticalItemIndex[criticalItemType] = Mathf.Clamp(criticalItemIndex[criticalItemType], 0, m_dataCount - 1);
-                }
-                else
-                {
-                    break;
-                }
-            }
+            return false;
         }
 
 
