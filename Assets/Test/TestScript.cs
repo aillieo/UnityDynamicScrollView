@@ -152,6 +152,23 @@ public class TestScript : MonoBehaviour {
         UpdateAllScrollViews();
     }
 
+    public void AppendRandomData()
+    {
+        DefaultScrollItemData newData = new DefaultScrollItemData() { name = GetRandomSizeString(), longString = GetRandomLongText() };
+        testData.Add(newData);
+        UpdateAllScrollViewsIncrementally();
+    }
+
+    public void RemoveLastData()
+    {
+        if (testData.Count == 0)
+        {
+            return;
+        }
+        testData.RemoveAt(testData.Count - 1);
+        UpdateAllScrollViewsIncrementally();
+    }
+
     void UpdateAllScrollViews()
     {
         scrollView_1.UpdateData(false);
@@ -159,4 +176,10 @@ public class TestScript : MonoBehaviour {
         scrollView_3.UpdateData(false);
     }
 
+    void UpdateAllScrollViewsIncrementally()
+    {
+        scrollView_1.UpdateDataIncrementally(false);
+        scrollView_2.UpdateDataIncrementally(false);
+        scrollView_3.UpdateDataIncrementally(false);
+    }
 }

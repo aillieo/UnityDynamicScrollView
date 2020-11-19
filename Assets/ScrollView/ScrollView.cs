@@ -78,7 +78,7 @@ namespace AillieoUtils
 
         // status
         private bool initialized = false;
-        private bool willUpdateData = false;
+        private int willUpdateData = 0;
 
         public virtual void SetUpdateFunc(Action<int,RectTransform> func)
         {
@@ -112,15 +112,37 @@ namespace AillieoUtils
             }
             if(immediately)
             {
+                willUpdateData |= 3; // 0011
                 InternalUpdateData();
             }
             else
             {
-                if(!willUpdateData)
+                if(willUpdateData == 0)
                 {
-                    willUpdateData = true;
                     StartCoroutine(DelayUpdateData());
                 }
+                willUpdateData |= 3;
+            }
+        }
+
+        public void UpdateDataIncrementally(bool immediately = true)
+        {
+            if (!initialized)
+            {
+                InitScrollView();
+            }
+            if (immediately)
+            {
+                willUpdateData |= 1; // 0001
+                InternalUpdateData();
+            }
+            else
+            {
+                if (willUpdateData == 0)
+                {
+                    StartCoroutine(DelayUpdateData());
+                }
+                willUpdateData |= 1;
             }
         }
 
@@ -160,9 +182,9 @@ namespace AillieoUtils
 
         private void InternalUpdateData()
         {
-            willUpdateData = false;
-
             int newDataCount = 0;
+            bool keepOldItems = ((willUpdateData & 2) == 0);
+
             if (itemCountFunc != null)
             {
                 newDataCount = itemCountFunc();
@@ -172,11 +194,15 @@ namespace AillieoUtils
             {
                 if (managedItems.Count < newDataCount) //增加
                 {
-                    foreach (var itemWithRect in managedItems)
+                    if(!keepOldItems)
                     {
-                        // 重置所有rect
-                        itemWithRect.rectDirty = true;
+                        foreach (var itemWithRect in managedItems)
+                        {
+                            // 重置所有rect
+                            itemWithRect.rectDirty = true;
+                        }
                     }
+
                     while (managedItems.Count < newDataCount)
                     {
                         managedItems.Add(new ScrollItemWithRect());
@@ -186,12 +212,24 @@ namespace AillieoUtils
                 {
                     for (int i = 0, count = managedItems.Count; i < count; ++i)
                     {
-                        // 重置所有rect
-                        managedItems[i].rectDirty = true;
+                        if(i < newDataCount)
+                        {
+                            // 重置所有rect
+                            if(!keepOldItems)
+                            {
+                                managedItems[i].rectDirty = true;
+                            }
+
+                            if(i == newDataCount - 1)
+                            {
+                                managedItems[i].rectDirty = true;
+                            }
+                        }
 
                         // 超出部分 清理回收item
                         if (i >= newDataCount)
                         {
+                            managedItems[i].rectDirty = true;
                             if (managedItems[i].item != null)
                             {
                                 RecycleOldItem(managedItems[i].item);
@@ -203,17 +241,21 @@ namespace AillieoUtils
             }
             else
             {
-                for (int i = 0, count = managedItems.Count; i < count; ++i)
+                if(!keepOldItems)
                 {
-                    // 重置所有rect
-                    managedItems[i].rectDirty = true;
+                    for (int i = 0, count = managedItems.Count; i < count; ++i)
+                    {
+                        // 重置所有rect
+                        managedItems[i].rectDirty = true;
+                    }
                 }
             }
 
             m_dataCount = newDataCount;
 
             ResetCriticalItems();
-        
+
+            willUpdateData = 0;
         }
 
         void ResetCriticalItems()
