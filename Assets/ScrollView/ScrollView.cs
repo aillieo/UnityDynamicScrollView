@@ -287,11 +287,11 @@ namespace AillieoUtils
                 if (hasItem == shouldShow)
                 {
                     // 不应显示且未显示
-                    if (firstIndex != -1)
-                    {
-                        // 已经遍历完所有要显示的了 后边的先跳过
-                        break;
-                    }
+                    //if (firstIndex != -1)
+                    //{
+                    //    // 已经遍历完所有要显示的了 后边的先跳过
+                    //    break;
+                    //}
                     continue;
                 }
 
