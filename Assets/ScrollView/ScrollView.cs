@@ -376,15 +376,17 @@ namespace AillieoUtils
                 RecycleOldItem(item);
                 managedItems[criticalIndex].item = null;
                 //Debug.Log("回收了 " + criticalIndex);
-                criticalItemIndex[criticalItemType + 2] = criticalIndex;
+
                 if (criticalItemType == CriticalItemType.UpToHide)
                 {
                     // 最上隐藏了一个
+                    criticalItemIndex[criticalItemType + 2] = Mathf.Max(criticalIndex, criticalItemIndex[criticalItemType + 2]);
                     criticalItemIndex[criticalItemType]++;
                 }
                 else
                 {
                     // 最下隐藏了一个
+                    criticalItemIndex[criticalItemType + 2] = Mathf.Min(criticalIndex, criticalItemIndex[criticalItemType + 2]);
                     criticalItemIndex[criticalItemType]--;
                 }
                 criticalItemIndex[criticalItemType] = Mathf.Clamp(criticalItemIndex[criticalItemType], 0, m_dataCount - 1);
@@ -399,7 +401,6 @@ namespace AillieoUtils
         {
             RectTransform item = GetCriticalItem(criticalItemType);
             int criticalIndex = criticalItemIndex[criticalItemType];
-            
             //if (item == null && ShouldItemFullySeenAtIndex(criticalItemIndex[criticalItemType - 2]))
 
             if (item == null && ShouldItemSeenAtIndex(criticalIndex))
@@ -409,16 +410,17 @@ namespace AillieoUtils
                 //Debug.Log("创建了 " + criticalIndex);
                 managedItems[criticalIndex].item = newItem;
 
-                criticalItemIndex[criticalItemType - 2] = criticalIndex;
 
                 if (criticalItemType == CriticalItemType.UpToShow)
                 {
                     // 最上显示了一个
+                    criticalItemIndex[criticalItemType - 2] = Mathf.Min(criticalIndex, criticalItemIndex[criticalItemType - 2]);
                     criticalItemIndex[criticalItemType]--;
                 }
                 else
                 {
                     // 最下显示了一个
+                    criticalItemIndex[criticalItemType - 2] = Mathf.Max(criticalIndex, criticalItemIndex[criticalItemType - 2]);
                     criticalItemIndex[criticalItemType]++;
                 }
                 criticalItemIndex[criticalItemType] = Mathf.Clamp(criticalItemIndex[criticalItemType], 0, m_dataCount - 1);
