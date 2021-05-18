@@ -187,7 +187,7 @@ namespace AillieoUtils
                 // Debug.LogError($"critical={critical} toShow={toShow} pin={pin} pin2={pin2} pinpos={rect.position} pin2pos={rect2.position} pinworld={oldWorld} pin2world={newWorld} deltaLocal = {deltaLocal}");
                 SetContentAnchoredPosition(content.anchoredPosition - deltaLocal);
                 UpdateData(true);
-                UpdateData(false);
+                //UpdateData(false);
                 // Debug.LogError($"critical={critical} toShow={toShow} pin={pin} pin2={pin2} pinpos={rect.position} pin2pos={GetItemLocalRect(pin2).position} pinworld={oldWorld} pin2world={content.TransformPoint(GetItemLocalRect(pin2).position)} ===");
                 // 取回速度
                 velocity = oldVelocity;
