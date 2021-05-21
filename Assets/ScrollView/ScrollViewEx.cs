@@ -76,8 +76,16 @@ namespace AillieoUtils
             base.InternalScrollTo(index - startOffset);
         }
 
+        bool reloadFlag = false;
+
         private void OnValueChanged(Vector2 position)
         {
+            if (reloadFlag)
+            {
+                UpdateData(true);
+                reloadFlag = false;
+            }
+
             int toShow;
             int critical;
             bool downward;
@@ -159,6 +167,8 @@ namespace AillieoUtils
 
             if (old != startOffset)
             {
+                reloadFlag = true;
+
                 // 记录 原先的速度
                 Vector2 oldVelocity = velocity;
                 // 计算 pin元素的世界坐标
