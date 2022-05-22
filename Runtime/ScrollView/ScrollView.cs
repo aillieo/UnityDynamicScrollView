@@ -392,7 +392,7 @@ namespace AillieoUtils
                 criticalItemIndex[criticalItemType] = Mathf.Clamp(criticalItemIndex[criticalItemType], 0, m_dataCount - 1);
                 return true;
             }
-            
+
             return false;
         }
 
@@ -432,6 +432,7 @@ namespace AillieoUtils
 
         bool ShouldItemSeenAtIndex(int index)
         {
+            return true;
             if(index < 0 || index >= m_dataCount)
             {
                 return false;
@@ -585,12 +586,12 @@ namespace AillieoUtils
         {
             /*
              *  WorldCorners
-             * 
-             *    1 ------- 2     
+             *
+             *    1 ------- 2
              *    |         |
              *    |         |
              *    0 ------- 3
-             * 
+             *
              */
 
             // refRect是在Content节点下的 viewport的 rect
