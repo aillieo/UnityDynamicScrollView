@@ -1,4 +1,7 @@
-﻿using UnityEditor;
+﻿using System;
+using System.Linq;
+using System.Reflection;
+using UnityEditor;
 using UnityEditor.UI;
 using UnityEngine;
 using UnityEngine.UI;
@@ -27,7 +30,7 @@ namespace AillieoUtils
         }
 
         GUIStyle m_caption;
-        GUIStyle caption 
+        GUIStyle caption
         {
             get
             {
@@ -56,7 +59,7 @@ namespace AillieoUtils
             base.OnInspectorGUI();
             EditorGUILayout.EndVertical();
         }
-        
+
         protected virtual void DrawConfigInfo()
         {
             EditorGUILayout.PropertyField(itemTemplate);
@@ -77,8 +80,7 @@ namespace AillieoUtils
         static Color panelColor = new Color(1f, 1f, 1f, 0.392f);
         static Color defaultSelectableColor = new Color(1f, 1f, 1f, 1f);
         static Vector2 thinElementSize = new Vector2(160f, 20f);
-
-
+        private static Action<GameObject, MenuCommand> PlaceUIElementRoot;
 
         [MenuItem("GameObject/UI/ScrollView", false, 90)]
         static public void AddScrollView(MenuCommand menuCommand)
@@ -88,7 +90,10 @@ namespace AillieoUtils
 
         protected static void InternalAddScrollView<T>(MenuCommand menuCommand) where T : ScrollView
         {
+            GetPrivateMethodByReflection();
+
             GameObject root = CreateUIElementRoot(typeof(T).Name, new Vector2(200, 200));
+            PlaceUIElementRoot?.Invoke(root, menuCommand);
 
             GameObject viewport = CreateUIObject("Viewport", root);
             GameObject content = CreateUIObject("Content", viewport);
@@ -232,6 +237,32 @@ namespace AillieoUtils
             colors.highlightedColor = new Color(0.882f, 0.882f, 0.882f);
             colors.pressedColor = new Color(0.698f, 0.698f, 0.698f);
             colors.disabledColor = new Color(0.521f, 0.521f, 0.521f);
+        }
+
+        private static void GetPrivateMethodByReflection()
+        {
+            if (PlaceUIElementRoot == null)
+            {
+                Assembly uiEditorAssembly = AppDomain.CurrentDomain.GetAssemblies()
+                    .FirstOrDefault(asm => asm.GetName().Name == "UnityEditor.UI");
+                if (uiEditorAssembly != null)
+                {
+                    Type menuOptionType = uiEditorAssembly.GetType("UnityEditor.UI.MenuOptions");
+                    if (menuOptionType != null)
+                    {
+                        MethodInfo miPlaceUIElementRoot = menuOptionType.GetMethod(
+                            "PlaceUIElementRoot",
+                            BindingFlags.NonPublic | BindingFlags.Static);
+                        if (miPlaceUIElementRoot != null)
+                        {
+                            PlaceUIElementRoot = Delegate.CreateDelegate(
+                                    typeof(Action<GameObject, MenuCommand>),
+                                    miPlaceUIElementRoot)
+                                as Action<GameObject, MenuCommand>;
+                        }
+                    }
+                }
+            }
         }
     }
 }

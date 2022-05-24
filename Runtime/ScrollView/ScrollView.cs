@@ -53,6 +53,7 @@ namespace AillieoUtils
             public const int UpToShow = 2;
             public const int DownToShow = 3;
         }
+
         // 只保存4个临界index
         protected int[] criticalItemIndex = new int[4];
         Rect refRect;
@@ -432,7 +433,6 @@ namespace AillieoUtils
 
         bool ShouldItemSeenAtIndex(int index)
         {
-            return true;
             if(index < 0 || index >= m_dataCount)
             {
                 return false;
@@ -575,6 +575,9 @@ namespace AillieoUtils
             horizontal = (dir == 0);
 
             content.pivot = Vector2.up;
+            content.anchorMin = Vector2.up;
+            content.anchorMax = Vector2.up;
+
             InitPool();
             UpdateRefRect();
         }
@@ -595,6 +598,12 @@ namespace AillieoUtils
              */
 
             // refRect是在Content节点下的 viewport的 rect
+
+            if (!CanvasUpdateRegistry.IsRebuildingLayout())
+            {
+                Canvas.ForceUpdateCanvases();
+            }
+
             viewRect.GetWorldCorners(viewWorldConers);
             rectCorners[0] = content.transform.InverseTransformPoint(viewWorldConers[0]);
             rectCorners[1] = content.transform.InverseTransformPoint(viewWorldConers[2]);
@@ -725,6 +734,32 @@ namespace AillieoUtils
             }
             return new Rect();
         }
-    }
 
+#if UNITY_EDITOR
+        protected override void OnValidate()
+        {
+            int dir = (int)layoutType & flagScrollDirection;
+            if (dir == 1)
+            {
+                // vertical
+                if (horizontalScrollbar != null)
+                {
+                    horizontalScrollbar.gameObject.SetActive(false);
+                    horizontalScrollbar = null;
+                }
+            }
+            else
+            {
+                // horizontal
+                if (verticalScrollbar != null)
+                {
+                    verticalScrollbar.gameObject.SetActive(false);
+                    verticalScrollbar = null;
+                }
+            }
+
+            base.OnValidate();
+        }
+#endif
+    }
 }
