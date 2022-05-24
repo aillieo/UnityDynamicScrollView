@@ -4,6 +4,9 @@
 /Temp/
 /Library/
 
+[Oo]bj/
+[Ll]ogs/
+
 # ===================================== #
 # Visual Studio / MonoDevelop generated #
 # ===================================== #
@@ -18,7 +21,7 @@
 *.user
 *.unityproj
 *.booproj
-/.vs/
+.vs/
  
 # ============ #
 # OS generated #
@@ -30,3 +33,8 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# ===== #
+# Rider #
+# ===== #
+.idea/

@@ -36,13 +36,19 @@ public class TestScript : MonoBehaviour {
         if (sd.name == "XXL")
             return new Vector2(300, 120);
         else if (sd.name == "XL")
-            return new Vector2(250, 110);
+            return new Vector2(300, 110);
         else if (sd.name == "L")
-            return new Vector2(200, 100);
+            return new Vector2(300, 100);
         else if (sd.name == "M")
-            return new Vector2(150, 90);
+            return new Vector2(300, 90);
         else // "S"
-            return new Vector2(100, 80);
+            return new Vector2(300, 80);
+    }
+
+    Vector2 itemSizeFunc_5(int index)
+    {
+        Vector2 size2 = itemSizeFunc_2(index);
+        return new Vector2(size2.y, size2.x);
     }
 
     int itemCountFunc()
@@ -71,6 +77,12 @@ public class TestScript : MonoBehaviour {
 
     public ScrollView scrollView_3;
 
+    public ScrollView scrollView_4;
+
+    public ScrollView scrollView_5;
+
+    public ScrollView scrollView_6;
+
     public RectTransform templateTextItem;
     private RectTransform templateTextItemInstance;
 
@@ -86,6 +98,17 @@ public class TestScript : MonoBehaviour {
         scrollView_3.SetUpdateFunc(updateFunc_3);
         scrollView_3.SetItemSizeFunc(itemSizeFunc_3);
         scrollView_3.SetItemCountFunc(itemCountFunc);
+        
+        scrollView_4.SetUpdateFunc(updateFunc);
+        scrollView_4.SetItemCountFunc(itemCountFunc);
+
+        scrollView_5.SetUpdateFunc(updateFunc);
+        scrollView_5.SetItemSizeFunc(itemSizeFunc_5);
+        scrollView_5.SetItemCountFunc(itemCountFunc);
+
+        scrollView_6.SetUpdateFunc(updateFunc_3);
+        scrollView_6.SetItemSizeFunc(itemSizeFunc_3);
+        scrollView_6.SetItemCountFunc(itemCountFunc);
 
         int dataCount = 0;
         do
@@ -174,6 +197,9 @@ public class TestScript : MonoBehaviour {
         scrollView_1.UpdateData(false);
         scrollView_2.UpdateData(false);
         scrollView_3.UpdateData(false);
+        scrollView_4.UpdateData(false);
+        scrollView_5.UpdateData(false);
+        scrollView_6.UpdateData(false);
     }
 
     void UpdateAllScrollViewsIncrementally()
@@ -181,5 +207,8 @@ public class TestScript : MonoBehaviour {
         scrollView_1.UpdateDataIncrementally(false);
         scrollView_2.UpdateDataIncrementally(false);
         scrollView_3.UpdateDataIncrementally(false);
+        scrollView_4.UpdateDataIncrementally(false);
+        scrollView_5.UpdateDataIncrementally(false);
+        scrollView_6.UpdateDataIncrementally(false);
     }
 }
