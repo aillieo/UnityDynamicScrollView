@@ -391,6 +391,14 @@ namespace AillieoUtils
                     criticalItemIndex[criticalItemType]--;
                 }
                 criticalItemIndex[criticalItemType] = Mathf.Clamp(criticalItemIndex[criticalItemType], 0, m_dataCount - 1);
+
+                if (criticalItemIndex[CriticalItemType.UpToHide] > criticalItemIndex[CriticalItemType.DownToHide])
+                {
+                    // 偶然的情况 拖拽超出一屏
+                    ResetCriticalItems();
+                    return false;
+                }
+
                 return true;
             }
 
@@ -425,6 +433,14 @@ namespace AillieoUtils
                     criticalItemIndex[criticalItemType]++;
                 }
                 criticalItemIndex[criticalItemType] = Mathf.Clamp(criticalItemIndex[criticalItemType], 0, m_dataCount - 1);
+
+                if (criticalItemIndex[CriticalItemType.UpToShow] >= criticalItemIndex[CriticalItemType.DownToShow])
+                {
+                    // 偶然的情况 拖拽超出一屏
+                    ResetCriticalItems();
+                    return false;
+                }
+
                 return true;
             }
             return false;
