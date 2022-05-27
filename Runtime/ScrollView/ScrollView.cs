@@ -577,6 +577,7 @@ namespace AillieoUtils
             content.pivot = Vector2.up;
             content.anchorMin = Vector2.up;
             content.anchorMax = Vector2.up;
+            content.anchoredPosition = Vector2.zero;
 
             InitPool();
             UpdateRefRect();

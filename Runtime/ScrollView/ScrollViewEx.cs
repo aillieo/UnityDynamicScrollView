@@ -15,6 +15,8 @@ namespace AillieoUtils
         protected override void Awake()
         {
             base.Awake();
+
+            lastPosition = Vector2.up;
             onValueChanged.AddListener(OnValueChanged);
         }
 
@@ -26,6 +28,8 @@ namespace AillieoUtils
         private int startOffset = 0;
 
         private Func<int> realItemCountFunc;
+
+        private Vector2 lastPosition;
 
         public override void SetUpdateFunc(Action<int, RectTransform> func)
         {
@@ -80,20 +84,21 @@ namespace AillieoUtils
 
         private void OnValueChanged(Vector2 position)
         {
-            if (reloadFlag)
-            {
-                UpdateData(true);
-                reloadFlag = false;
-            }
 
             int toShow;
             int critical;
             bool downward;
             int pin;
+
+            Vector2 delta = position - lastPosition;
+            lastPosition = position;
+
+            reloadFlag = false;
+
             if (((int)layoutType & flagScrollDirection) == 1)
             {
                 // 垂直滚动 只计算y向
-                if (velocity.y > 0)
+                if (delta.y < 0)
                 {
                     // 向上
                     toShow = criticalItemIndex[CriticalItemType.DownToShow];
@@ -105,7 +110,7 @@ namespace AillieoUtils
                     pin = critical - 1;
                     downward = false;
                 }
-                else
+                else if (delta.y > 0)
                 {
                     // 向下
                     toShow = criticalItemIndex[CriticalItemType.UpToShow];
@@ -117,11 +122,15 @@ namespace AillieoUtils
                     pin = critical + 1;
                     downward = true;
                 }
+                else
+                {
+                    return;
+                }
             }
             else // = 0
             {
                 // 水平滚动 只计算x向
-                if (velocity.x > 0)
+                if (delta.x > 0)
                 {
                     // 向右
                     toShow = criticalItemIndex[CriticalItemType.UpToShow];
@@ -133,7 +142,7 @@ namespace AillieoUtils
                     pin = critical + 1;
                     downward = true;
                 }
-                else
+                else if (delta.x < 0)
                 {
                     // 向左
                     toShow = criticalItemIndex[CriticalItemType.DownToShow];
@@ -144,6 +153,10 @@ namespace AillieoUtils
                     }
                     pin = critical - 1;
                     downward = false;
+                }
+                else
+                {
+                    return;
                 }
             }
 
@@ -174,7 +187,6 @@ namespace AillieoUtils
                 // 计算 pin元素的世界坐标
                 Rect rect = GetItemLocalRect(pin);
                 Vector2 oldWorld = content.TransformPoint(rect.position);
-                UpdateData(true);
                 int dataCount = 0;
                 if(itemCountFunc != null)
                 {
@@ -202,7 +214,20 @@ namespace AillieoUtils
                 // 取回速度
                 velocity = oldVelocity;
             }
+        }
 
+        public override void OnDrag(PointerEventData eventData)
+        {
+            if (reloadFlag)
+            {
+                reloadFlag = false;
+                OnEndDrag(eventData);
+                OnBeginDrag(eventData);
+
+                return;
+            }
+
+            base.OnDrag(eventData);
         }
     }
 }
