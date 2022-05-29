@@ -105,12 +105,23 @@ namespace AillieoUtils
             }
         }
 
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+            if (willUpdateData != 0)
+            {
+                StartCoroutine(DelayUpdateData());
+            }
+        }
+
+        protected override void OnDisable()
+        {
+            initialized = false;
+            base.OnDisable();
+        }
+
         public void UpdateData(bool immediately = true)
         {
-            if (!initialized)
-            {
-                InitScrollView();
-            }
             if(immediately)
             {
                 willUpdateData |= 3; // 0011
@@ -118,7 +129,7 @@ namespace AillieoUtils
             }
             else
             {
-                if(willUpdateData == 0)
+                if(willUpdateData == 0 && IsActive())
                 {
                     StartCoroutine(DelayUpdateData());
                 }
@@ -128,10 +139,6 @@ namespace AillieoUtils
 
         public void UpdateDataIncrementally(bool immediately = true)
         {
-            if (!initialized)
-            {
-                InitScrollView();
-            }
             if (immediately)
             {
                 willUpdateData |= 1; // 0001
@@ -176,13 +183,24 @@ namespace AillieoUtils
 
         private IEnumerator DelayUpdateData()
         {
-            yield return null;
+            yield return new WaitForEndOfFrame();
             InternalUpdateData();
         }
 
 
         private void InternalUpdateData()
         {
+            if (!IsActive())
+            {
+                willUpdateData |= 3;
+                return;
+            }
+
+            if (!initialized)
+            {
+                InitScrollView();
+            }
+
             int newDataCount = 0;
             bool keepOldItems = ((willUpdateData & 2) == 0);
 
