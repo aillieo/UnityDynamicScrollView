@@ -1,4 +1,4 @@
-﻿using UnityEditor;
+using UnityEditor;
 using UnityEditor.UI;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,11 +11,10 @@ namespace AillieoUtils
     {
         SerializedProperty pageSize;
 
-
         protected override void OnEnable()
         {
             base.OnEnable();
-            pageSize = serializedObject.FindProperty("m_pageSize");
+            pageSize = serializedObject.FindProperty("pageSize");
         }
 
         protected override void DrawConfigInfo()
@@ -24,8 +23,8 @@ namespace AillieoUtils
             EditorGUILayout.PropertyField(pageSize);
         }
         
-        [MenuItem("GameObject/UI/ScrollViewEx", false, 90)]
-        static public void AddScrollViewEx(MenuCommand menuCommand)
+        [MenuItem("GameObject/UI/DynamicScrollViewEx", false, 90)]
+        public static void AddScrollViewEx(MenuCommand menuCommand)
         {
             InternalAddScrollView<ScrollViewEx>(menuCommand);
         }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
@@ -26,19 +26,19 @@ namespace AillieoUtils
             itemTemplate = serializedObject.FindProperty("itemTemplate");
             poolSize = serializedObject.FindProperty("poolSize");
             defaultItemSize = serializedObject.FindProperty("defaultItemSize");
-            layoutType = serializedObject.FindProperty("m_layoutType");
+            layoutType = serializedObject.FindProperty("layoutType");
         }
 
-        GUIStyle m_caption;
+        GUIStyle cachedCaption;
         GUIStyle caption
         {
             get
             {
-                if(m_caption == null)
+                if(cachedCaption == null)
                 {
-                    m_caption = new GUIStyle { richText = true, alignment = TextAnchor.MiddleCenter };
+                    cachedCaption = new GUIStyle { richText = true, alignment = TextAnchor.MiddleCenter };
                 }
-                return m_caption;
+                return cachedCaption;
             }
         }
 
@@ -82,7 +82,7 @@ namespace AillieoUtils
         static Vector2 thinElementSize = new Vector2(160f, 20f);
         private static Action<GameObject, MenuCommand> PlaceUIElementRoot;
 
-        [MenuItem("GameObject/UI/ScrollView", false, 90)]
+        [MenuItem("GameObject/UI/DynamicScrollView", false, 90)]
         static public void AddScrollView(MenuCommand menuCommand)
         {
             InternalAddScrollView<ScrollView>(menuCommand);
