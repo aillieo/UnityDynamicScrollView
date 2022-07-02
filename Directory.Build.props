@@ -1,8 +1,6 @@
 <Project>
   <PropertyGroup>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <CodeAnalysisRuleSet>$(MSBuildThisFileDirectory)AillieoTech.ruleset</CodeAnalysisRuleSet>
-
     <NoWarn>$(NoWarn);0649</NoWarn>
   </PropertyGroup>
 

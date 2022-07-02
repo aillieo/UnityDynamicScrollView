@@ -1,25 +1,22 @@
-using System.Collections;
-using System.Collections.Generic;
-using System;
-using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.Serialization;
+// -----------------------------------------------------------------------
+// <copyright file="ScrollViewEx.cs" company="AillieoTech">
+// Copyright (c) AillieoTech. All rights reserved.
+// </copyright>
+// -----------------------------------------------------------------------
 
 namespace AillieoUtils
 {
+    using System;
+    using UnityEngine;
+    using UnityEngine.EventSystems;
+    using UnityEngine.Serialization;
+
     [RequireComponent(typeof(RectTransform))]
     [DisallowMultipleComponent]
     public class ScrollViewEx : ScrollView
     {
-        protected override void Awake()
-        {
-            base.Awake();
-
-            lastPosition = Vector2.up;
-            onValueChanged.AddListener(OnValueChanged);
-        }
-
-        [SerializeField][FormerlySerializedAs("m_pageSize")]
+        [SerializeField]
+        [FormerlySerializedAs("m_pageSize")]
         private int pageSize = 50;
 
         private int startOffset = 0;
@@ -28,15 +25,19 @@ namespace AillieoUtils
 
         private Vector2 lastPosition;
 
+        private bool reloadFlag = false;
+
         public override void SetUpdateFunc(Action<int, RectTransform> func)
         {
-            if(func != null)
+            if (func != null)
             {
                 var f = func;
-                func = (index, rect) => {
-                    f(index + startOffset, rect);
+                func = (index, rect) =>
+                {
+                    f(index + this.startOffset, rect);
                 };
             }
+
             base.SetUpdateFunc(func);
         }
 
@@ -45,77 +46,101 @@ namespace AillieoUtils
             if (func != null)
             {
                 var f = func;
-                func = (index) => {
-                    return f(index + startOffset);
+                func = (index) =>
+                {
+                    return f(index + this.startOffset);
                 };
             }
+
             base.SetItemSizeFunc(func);
         }
 
         public override void SetItemCountFunc(Func<int> func)
         {
-            realItemCountFunc = func;
-            if(func != null)
+            this.realItemCountFunc = func;
+            if (func != null)
             {
                 var f = func;
-                func = () => Mathf.Min(f(), pageSize);
+                func = () => Mathf.Min(f(), this.pageSize);
             }
+
             base.SetItemCountFunc(func);
+        }
+
+        public override void OnDrag(PointerEventData eventData)
+        {
+            if (this.reloadFlag)
+            {
+                this.reloadFlag = false;
+                this.OnEndDrag(eventData);
+                this.OnBeginDrag(eventData);
+
+                return;
+            }
+
+            base.OnDrag(eventData);
+        }
+
+        protected override void Awake()
+        {
+            base.Awake();
+
+            this.lastPosition = Vector2.up;
+            this.onValueChanged.AddListener(this.OnValueChanged);
         }
 
         protected override void InternalScrollTo(int index)
         {
-            int count = 0;
-            if (realItemCountFunc != null)
+            var count = 0;
+            if (this.realItemCountFunc != null)
             {
-                count = realItemCountFunc();
+                count = this.realItemCountFunc();
             }
-            index = Mathf.Clamp(index, 0, count - 1);
-            startOffset = Mathf.Clamp(index - pageSize / 2, 0, count - itemCountFunc());
-            UpdateData(true);
-            //Debug.LogError($"index={index} startOffset={startOffset} first={index - startOffset}");
-            base.InternalScrollTo(index - startOffset);
-        }
 
-        private bool reloadFlag = false;
+            index = Mathf.Clamp(index, 0, count - 1);
+            this.startOffset = Mathf.Clamp(index - (this.pageSize / 2), 0, count - this.itemCountFunc());
+            this.UpdateData(true);
+            base.InternalScrollTo(index - this.startOffset);
+        }
 
         private void OnValueChanged(Vector2 position)
         {
-
             int toShow;
             int critical;
             bool downward;
             int pin;
 
-            Vector2 delta = position - lastPosition;
-            lastPosition = position;
+            Vector2 delta = position - this.lastPosition;
+            this.lastPosition = position;
 
-            reloadFlag = false;
+            this.reloadFlag = false;
 
-            if (((int)layoutType & flagScrollDirection) == 1)
+            if (((int)this.layoutType & flagScrollDirection) == 1)
             {
                 // 垂直滚动 只计算y向
                 if (delta.y < 0)
                 {
                     // 向上
-                    toShow = criticalItemIndex[CriticalItemType.DownToShow];
-                    critical = pageSize - 1;
+                    toShow = this.criticalItemIndex[CriticalItemType.DownToShow];
+                    critical = this.pageSize - 1;
                     if (toShow < critical)
                     {
                         return;
                     }
+
                     pin = critical - 1;
                     downward = false;
                 }
                 else if (delta.y > 0)
                 {
                     // 向下
-                    toShow = criticalItemIndex[CriticalItemType.UpToShow];
+                    toShow = this.criticalItemIndex[CriticalItemType.UpToShow];
                     critical = 0;
-                    if(toShow > critical)
+                    if (toShow > critical)
                     {
                         return;
                     }
+
                     pin = critical + 1;
                     downward = true;
                 }
@@ -124,30 +149,33 @@ namespace AillieoUtils
                     return;
                 }
             }
-            else // = 0
+            else
             {
+                // = 0
                 // 水平滚动 只计算x向
                 if (delta.x > 0)
                 {
                     // 向右
-                    toShow = criticalItemIndex[CriticalItemType.UpToShow];
+                    toShow = this.criticalItemIndex[CriticalItemType.UpToShow];
                     critical = 0;
                     if (toShow > critical)
                     {
                         return;
                     }
+
                     pin = critical + 1;
                     downward = true;
                 }
                 else if (delta.x < 0)
                 {
                     // 向左
-                    toShow = criticalItemIndex[CriticalItemType.DownToShow];
-                    critical = pageSize - 1;
+                    toShow = this.criticalItemIndex[CriticalItemType.DownToShow];
+                    critical = this.pageSize - 1;
                     if (toShow < critical)
                     {
                         return;
                     }
+
                     pin = critical - 1;
                     downward = false;
                 }
@@ -158,73 +186,60 @@ namespace AillieoUtils
             }
 
             // 该翻页了 翻半页吧
-            int old = startOffset;
+            var old = this.startOffset;
             if (downward)
             {
-                startOffset -= pageSize / 2;
+                this.startOffset -= this.pageSize / 2;
             }
             else
             {
-                startOffset += pageSize / 2;
+                this.startOffset += this.pageSize / 2;
             }
 
-            int realDataCount = 0;
-            if (realItemCountFunc != null)
+            var realDataCount = 0;
+            if (this.realItemCountFunc != null)
             {
-                realDataCount = realItemCountFunc();
+                realDataCount = this.realItemCountFunc();
             }
-            startOffset = Mathf.Clamp(startOffset, 0, Mathf.Max(realDataCount - pageSize, 0));
 
-            if (old != startOffset)
+            this.startOffset = Mathf.Clamp(this.startOffset, 0, Mathf.Max(realDataCount - this.pageSize, 0));
+
+            if (old != this.startOffset)
             {
-                reloadFlag = true;
+                this.reloadFlag = true;
 
                 // 记录 原先的速度
-                Vector2 oldVelocity = velocity;
+                Vector2 oldVelocity = this.velocity;
+
                 // 计算 pin元素的世界坐标
-                Rect rect = GetItemLocalRect(pin);
-                Vector2 oldWorld = content.TransformPoint(rect.position);
-                int dataCount = 0;
-                if(itemCountFunc != null)
+                Rect rect = this.GetItemLocalRect(pin);
+
+                Vector2 oldWorld = this.content.TransformPoint(rect.position);
+                var dataCount = 0;
+                if (this.itemCountFunc != null)
                 {
-                    dataCount = itemCountFunc();
+                    dataCount = this.itemCountFunc();
                 }
-                if(dataCount > 0)
+
+                if (dataCount > 0)
                 {
-                    EnsureItemRect(0);
-                    if(dataCount > 1)
+                    this.EnsureItemRect(0);
+                    if (dataCount > 1)
                     {
-                        EnsureItemRect(dataCount - 1);
+                        this.EnsureItemRect(dataCount - 1);
                     }
                 }
+
                 // 根据 pin元素的世界坐标 计算出content的position
-                int pin2 = pin + old - startOffset;
-                Rect rect2 = GetItemLocalRect(pin2);
-                Vector2 newWorld = content.TransformPoint(rect2.position);
+                var pin2 = pin + old - this.startOffset;
+                Rect rect2 = this.GetItemLocalRect(pin2);
+                Vector2 newWorld = this.content.TransformPoint(rect2.position);
                 Vector2 deltaWorld = newWorld - oldWorld;
-                Vector2 deltaLocal = content.InverseTransformVector(deltaWorld);
-                // Debug.LogError($"critical={critical} toShow={toShow} pin={pin} pin2={pin2} pinpos={rect.position} pin2pos={rect2.position} pinworld={oldWorld} pin2world={newWorld} deltaLocal = {deltaLocal}");
-                SetContentAnchoredPosition(content.anchoredPosition - deltaLocal);
-                UpdateData(true);
-                //UpdateData(false);
-                // Debug.LogError($"critical={critical} toShow={toShow} pin={pin} pin2={pin2} pinpos={rect.position} pin2pos={GetItemLocalRect(pin2).position} pinworld={oldWorld} pin2world={content.TransformPoint(GetItemLocalRect(pin2).position)} ===");
-                // 取回速度
-                velocity = oldVelocity;
+                Vector2 deltaLocal = this.content.InverseTransformVector(deltaWorld);
+                this.SetContentAnchoredPosition(this.content.anchoredPosition - deltaLocal);
+                this.UpdateData(true);
+                this.velocity = oldVelocity;
             }
-        }
-
-        public override void OnDrag(PointerEventData eventData)
-        {
-            if (reloadFlag)
-            {
-                reloadFlag = false;
-                OnEndDrag(eventData);
-                OnBeginDrag(eventData);
-
-                return;
-            }
-
-            base.OnDrag(eventData);
         }
     }
 }

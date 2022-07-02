@@ -1,35 +1,38 @@
-using System;
-using System.Collections.Generic;
+// -----------------------------------------------------------------------
+// <copyright file="SimpleObjPool.cs" company="AillieoTech">
+// Copyright (c) AillieoTech. All rights reserved.
+// </copyright>
+// -----------------------------------------------------------------------
 
 namespace AillieoUtils
 {
+    using System;
+    using System.Collections.Generic;
+
     public class SimpleObjPool<T>
     {
+        private readonly Stack<T> stack;
+        private readonly Func<T> ctor;
+        private readonly Action<T> onRecycle;
+        private int size;
+        private int usedCount;
 
-        private readonly Stack<T> m_Stack;
-        private readonly Func<T> m_ctor;
-        private readonly Action<T> m_OnRecycle;
-        private int m_Size;
-        private int m_UsedCount;
-
-
-        public SimpleObjPool(int max = 5, Action<T> actionOnReset = null, Func <T> ctor = null)
+        public SimpleObjPool(int max = 5, Action<T> onRecycle = null, Func<T> ctor = null)
         {
-            m_Stack = new Stack<T>(max);
-            m_Size = max;
-            m_OnRecycle = actionOnReset;
-            m_ctor = ctor;
+            this.stack = new Stack<T>(max);
+            this.size = max;
+            this.onRecycle = onRecycle;
+            this.ctor = ctor;
         }
-
 
         public T Get()
         {
             T item;
-            if (m_Stack.Count == 0)
+            if (this.stack.Count == 0)
             {
-                if(null != m_ctor)
+                if (this.ctor != null)
                 {
-                    item = m_ctor();
+                    item = this.ctor();
                 }
                 else
                 {
@@ -38,45 +41,36 @@ namespace AillieoUtils
             }
             else
             {
-                item = m_Stack.Pop();
+                item = this.stack.Pop();
             }
-            m_UsedCount++;
+
+            this.usedCount++;
             return item;
         }
 
         public void Recycle(T item)
         {
-            if(m_OnRecycle!= null)
+            if (this.onRecycle != null)
             {
-                m_OnRecycle.Invoke(item);
+                this.onRecycle.Invoke(item);
             }
-            if(m_Stack.Count < m_Size)
+
+            if (this.stack.Count < this.size)
             {
-                m_Stack.Push(item);
+                this.stack.Push(item);
             }
-            m_UsedCount -- ;
-        }
 
-
-        /*
-        public T GetAndAutoRecycle()
-        {
-            T obj = Get();
-            Utils.OnNextFrameCall(()=> { Recycle(obj); });
-            return obj;
+            this.usedCount--;
         }
-        */
 
         public void Purge()
         {
             // TODO
         }
 
-
         public override string ToString()
         {
-            return string.Format("SimpleObjPool: item=[{0}], inUse=[{1}], restInPool=[{2}/{3}] ", typeof(T), m_UsedCount, m_Stack.Count, m_Size);
+            return $"SimpleObjPool: item=[{typeof(T)}], inUse=[{this.usedCount}], restInPool=[{this.stack.Count}/{this.size}] ";
         }
-
     }
 }

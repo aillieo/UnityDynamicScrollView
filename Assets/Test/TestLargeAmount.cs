@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
@@ -7,21 +7,20 @@ using UnityEngine.UI;
 using System.Diagnostics;
 
 public class TestLargeAmount : MonoBehaviour {
-
     List<DefaultScrollItemData> testData = new List<DefaultScrollItemData>();
 
     void updateFunc(int index, RectTransform item)
     {
-        DefaultScrollItemData data = testData[index];
+        DefaultScrollItemData data = this.testData[index];
         item.gameObject.SetActive(true);
         item.transform.Find("Text").GetComponent<Text>().text = string.Format("{0}_{1}", data.name, index);
     }
 
     Vector2 itemSizeFunc(int index)
     {
-        TimeConsumingFunc();
+        this.TimeConsumingFunc();
 
-        DefaultScrollItemData sd = testData[index];
+        DefaultScrollItemData sd = this.testData[index];
         if (sd.name == "XXL")
             return new Vector2(300, 150);
         else if (sd.name == "XL")
@@ -36,41 +35,40 @@ public class TestLargeAmount : MonoBehaviour {
 
     int itemCountFunc()
     {
-        return testData.Count;
+        return this.testData.Count;
     }
 
     public ScrollView scrollView;
     public ScrollViewEx scrollViewEx;
 
     void Start () {
+        this.scrollView.SetUpdateFunc(this.updateFunc);
+        this.scrollView.SetItemSizeFunc(this.itemSizeFunc);
+        this.scrollView.SetItemCountFunc(this.itemCountFunc);
+        this.scrollViewEx.SetUpdateFunc(this.updateFunc);
+        this.scrollViewEx.SetItemSizeFunc(this.itemSizeFunc);
+        this.scrollViewEx.SetItemCountFunc(this.itemCountFunc);
 
-        scrollView.SetUpdateFunc(updateFunc);
-        scrollView.SetItemSizeFunc(itemSizeFunc);
-        scrollView.SetItemCountFunc(itemCountFunc);
-        scrollViewEx.SetUpdateFunc(updateFunc);
-        scrollViewEx.SetItemSizeFunc(itemSizeFunc);
-        scrollViewEx.SetItemCountFunc(itemCountFunc);
-
-        int dataCount = 0;
+        var dataCount = 0;
         do
         {
-            DefaultScrollItemData newData = new DefaultScrollItemData() { name = GetRandomSizeString() };
-            testData.Add(newData);
+            var newData = new DefaultScrollItemData() { name = GetRandomSizeString() };
+            this.testData.Add(newData);
         }
         while (++dataCount < 50000);
 
-        scrollView.UpdateData(false);
-        scrollViewEx.UpdateData(false);
+        this.scrollView.UpdateData(false);
+        this.scrollViewEx.UpdateData(false);
     }
 
     static string GetRandomSizeString()
     {
-        float f = UnityEngine.Random.value;
-        if(f > 0.8)
+        var f = UnityEngine.Random.value;
+        if (f > 0.8)
         {
             return "XXL";
         }
-        else if(f > 0.6)
+        else if (f > 0.6)
         {
             return "XL";
         }
@@ -90,11 +88,11 @@ public class TestLargeAmount : MonoBehaviour {
 
     private void TimeConsumingFunc()
     {
-        string s = string.Empty;
-        int a = UnityEngine.Random.Range(0, 100);
-        int b = UnityEngine.Random.Range(0, 100);
+        var s = string.Empty;
+        var a = UnityEngine.Random.Range(0, 100);
+        var b = UnityEngine.Random.Range(0, 100);
 
-        for (int i = a; i < a + b; ++ i)
+        for (var i = a; i < a + b; ++ i)
         {
             s += i;
         }
@@ -102,58 +100,58 @@ public class TestLargeAmount : MonoBehaviour {
 
     public void AddRandomData()
     {
-        DefaultScrollItemData newData = new DefaultScrollItemData() { name = GetRandomSizeString()};
-        testData.Insert(UnityEngine.Random.Range(0,testData.Count), newData);
+        var newData = new DefaultScrollItemData() { name = GetRandomSizeString()};
+        this.testData.Insert(UnityEngine.Random.Range(0,this.testData.Count), newData);
 
-        Stopwatch stopwatch = new Stopwatch();
+        var stopwatch = new Stopwatch();
         stopwatch.Start();
-        scrollView.UpdateData(true);
+        this.scrollView.UpdateData(true);
         stopwatch.Stop();
-        long time1 = stopwatch.ElapsedMilliseconds;
+        var time1 = stopwatch.ElapsedMilliseconds;
         stopwatch.Reset();
         stopwatch.Start();
-        scrollViewEx.UpdateData(true);
+        this.scrollViewEx.UpdateData(true);
         stopwatch.Stop();
-        long time2 = stopwatch.ElapsedMilliseconds;
+        var time2 = stopwatch.ElapsedMilliseconds;
         UnityEngine.Debug.Log($"cost time in ms:     ScrollView:{time1}     ScrollViewEx:{time2}");
     }
 
     public void RemoveRandomData()
     {
-        if(testData.Count == 0)
+        if (this.testData.Count == 0)
         {
             return;
         }
-        int index = UnityEngine.Random.Range(0, testData.Count);
-        testData.RemoveAt(index);
+        var index = UnityEngine.Random.Range(0, this.testData.Count);
+        this.testData.RemoveAt(index);
 
-        Stopwatch stopwatch = new Stopwatch();
+        var stopwatch = new Stopwatch();
         stopwatch.Start();
-        scrollView.UpdateData(true);
+        this.scrollView.UpdateData(true);
         stopwatch.Stop();
-        long time1 = stopwatch.ElapsedMilliseconds;
+        var time1 = stopwatch.ElapsedMilliseconds;
         stopwatch.Reset();
         stopwatch.Start();
-        scrollViewEx.UpdateData(true);
+        this.scrollViewEx.UpdateData(true);
         stopwatch.Stop();
-        long time2 = stopwatch.ElapsedMilliseconds;
+        var time2 = stopwatch.ElapsedMilliseconds;
         UnityEngine.Debug.Log($"cost time in ms:     ScrollView:{time1}     ScrollViewEx:{time2}");
     }
 
     public void ScrollToRandom()
     {
-        int index = UnityEngine.Random.Range(0, testData.Count);
+        var index = UnityEngine.Random.Range(0, this.testData.Count);
 
-        Stopwatch stopwatch = new Stopwatch();
+        var stopwatch = new Stopwatch();
         stopwatch.Start();
-        scrollView.ScrollTo(index);
+        this.scrollView.ScrollTo(index);
         stopwatch.Stop();
-        long time1 = stopwatch.ElapsedMilliseconds;
+        var time1 = stopwatch.ElapsedMilliseconds;
         stopwatch.Reset();
         stopwatch.Start();
-        scrollViewEx.ScrollTo(index);
+        this.scrollViewEx.ScrollTo(index);
         stopwatch.Stop();
-        long time2 = stopwatch.ElapsedMilliseconds;
+        var time2 = stopwatch.ElapsedMilliseconds;
         UnityEngine.Debug.Log($"cost time in ms:     ScrollView:{time1}     ScrollViewEx:{time2}");
     }
 }

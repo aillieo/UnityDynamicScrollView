@@ -1,94 +1,70 @@
-using System;
-using System.Linq;
-using System.Reflection;
-using UnityEditor;
-using UnityEditor.UI;
-using UnityEngine;
-using UnityEngine.UI;
+// -----------------------------------------------------------------------
+// <copyright file="ScrollViewEditor.cs" company="AillieoTech">
+// Copyright (c) AillieoTech. All rights reserved.
+// </copyright>
+// -----------------------------------------------------------------------
 
 namespace AillieoUtils
 {
+    using System;
+    using System.Linq;
+    using System.Reflection;
+    using UnityEditor;
+    using UnityEditor.UI;
+    using UnityEngine;
+    using UnityEngine.UI;
 
     [CustomEditor(typeof(ScrollView))]
     public class ScrollViewEditor : ScrollRectEditor
     {
+        private const string bgPath = "UI/Skin/Background.psd";
+        private const string spritePath = "UI/Skin/UISprite.psd";
+        private const string maskPath = "UI/Skin/UIMask.psd";
+        private static Color panelColor = new Color(1f, 1f, 1f, 0.392f);
+        private static Color defaultSelectableColor = new Color(1f, 1f, 1f, 1f);
+        private static Vector2 thinElementSize = new Vector2(160f, 20f);
+        private static Action<GameObject, MenuCommand> PlaceUIElementRoot;
 
-        SerializedProperty itemTemplate;
-        SerializedProperty poolSize;
-        SerializedProperty defaultItemSize;
-        SerializedProperty layoutType;
+        private SerializedProperty itemTemplate;
+        private SerializedProperty poolSize;
+        private SerializedProperty defaultItemSize;
+        private SerializedProperty layoutType;
 
+        private GUIStyle cachedCaption;
 
-        protected override void OnEnable()
-        {
-            base.OnEnable();
-
-            itemTemplate = serializedObject.FindProperty("itemTemplate");
-            poolSize = serializedObject.FindProperty("poolSize");
-            defaultItemSize = serializedObject.FindProperty("defaultItemSize");
-            layoutType = serializedObject.FindProperty("layoutType");
-        }
-
-        GUIStyle cachedCaption;
-        GUIStyle caption
+        private GUIStyle caption
         {
             get
             {
-                if(cachedCaption == null)
+                if (this.cachedCaption == null)
                 {
-                    cachedCaption = new GUIStyle { richText = true, alignment = TextAnchor.MiddleCenter };
+                    this.cachedCaption = new GUIStyle { richText = true, alignment = TextAnchor.MiddleCenter };
                 }
-                return cachedCaption;
+
+                return this.cachedCaption;
             }
         }
 
         public override void OnInspectorGUI()
         {
-            serializedObject.Update();
+            this.serializedObject.Update();
 
             EditorGUILayout.BeginVertical("box");
-            EditorGUILayout.LabelField("<b>Additional configs</b>", caption);
+            EditorGUILayout.LabelField("<b>Additional configs</b>", this.caption);
             EditorGUILayout.Space(5);
-            DrawConfigInfo();
-            serializedObject.ApplyModifiedProperties();
+            this.DrawConfigInfo();
+            this.serializedObject.ApplyModifiedProperties();
             EditorGUILayout.EndVertical();
 
             EditorGUILayout.BeginVertical("box");
-            EditorGUILayout.LabelField("<b>For original ScrollRect</b>", caption);
+            EditorGUILayout.LabelField("<b>For original ScrollRect</b>", this.caption);
             EditorGUILayout.Space(5);
             base.OnInspectorGUI();
             EditorGUILayout.EndVertical();
         }
 
-        protected virtual void DrawConfigInfo()
-        {
-            EditorGUILayout.PropertyField(itemTemplate);
-            EditorGUILayout.PropertyField(poolSize);
-            EditorGUILayout.PropertyField(defaultItemSize);
-            layoutType.intValue = (int)(ScrollView.ItemLayoutType)EditorGUILayout.EnumPopup("layoutType", (ScrollView.ItemLayoutType)layoutType.intValue);
-        }
-
-
-
-
-
-
-
-        const string bgPath = "UI/Skin/Background.psd";
-        const string spritePath = "UI/Skin/UISprite.psd";
-        const string maskPath = "UI/Skin/UIMask.psd";
-        static Color panelColor = new Color(1f, 1f, 1f, 0.392f);
-        static Color defaultSelectableColor = new Color(1f, 1f, 1f, 1f);
-        static Vector2 thinElementSize = new Vector2(160f, 20f);
-        private static Action<GameObject, MenuCommand> PlaceUIElementRoot;
-
-        [MenuItem("GameObject/UI/DynamicScrollView", false, 90)]
-        static public void AddScrollView(MenuCommand menuCommand)
-        {
-            InternalAddScrollView<ScrollView>(menuCommand);
-        }
-
-        protected static void InternalAddScrollView<T>(MenuCommand menuCommand) where T : ScrollView
+        protected static void InternalAddScrollView<T>(MenuCommand menuCommand)
+            where T : ScrollView
         {
             GetPrivateMethodByReflection();
 
@@ -98,14 +74,13 @@ namespace AillieoUtils
             GameObject viewport = CreateUIObject("Viewport", root);
             GameObject content = CreateUIObject("Content", viewport);
 
-            GameObject parent = menuCommand.context as GameObject;
+            var parent = menuCommand.context as GameObject;
             if (parent != null)
             {
                 root.transform.SetParent(parent.transform, false);
             }
+
             Selection.activeGameObject = root;
-
-
 
             GameObject hScrollbar = CreateScrollbar();
             hScrollbar.name = "Scrollbar Horizontal";
@@ -125,8 +100,6 @@ namespace AillieoUtils
             vScrollbarRT.anchorMax = Vector2.one;
             vScrollbarRT.pivot = Vector2.one;
             vScrollbarRT.sizeDelta = new Vector2(vScrollbarRT.sizeDelta.x, 0);
-
-
 
             RectTransform viewportRect = viewport.GetComponent<RectTransform>();
             viewportRect.anchorMin = Vector2.zero;
@@ -163,9 +136,31 @@ namespace AillieoUtils
             viewportImage.type = Image.Type.Sliced;
         }
 
+        protected override void OnEnable()
+        {
+            base.OnEnable();
 
+            this.itemTemplate = this.serializedObject.FindProperty("itemTemplate");
+            this.poolSize = this.serializedObject.FindProperty("poolSize");
+            this.defaultItemSize = this.serializedObject.FindProperty("defaultItemSize");
+            this.layoutType = this.serializedObject.FindProperty("layoutType");
+        }
 
-        static GameObject CreateScrollbar()
+        protected virtual void DrawConfigInfo()
+        {
+            EditorGUILayout.PropertyField(this.itemTemplate);
+            EditorGUILayout.PropertyField(this.poolSize);
+            EditorGUILayout.PropertyField(this.defaultItemSize);
+            this.layoutType.intValue = (int)(ScrollView.ItemLayoutType)EditorGUILayout.EnumPopup("layoutType", (ScrollView.ItemLayoutType)this.layoutType.intValue);
+        }
+
+        [MenuItem("GameObject/UI/DynamicScrollView", false, 90)]
+        private static void AddScrollView(MenuCommand menuCommand)
+        {
+            InternalAddScrollView<ScrollView>(menuCommand);
+        }
+
+        private static GameObject CreateScrollbar()
         {
             // Create GOs Hierarchy
             GameObject scrollbarRoot = CreateUIElementRoot("Scrollbar", thinElementSize);
@@ -198,17 +193,17 @@ namespace AillieoUtils
             return scrollbarRoot;
         }
 
-        static GameObject CreateUIElementRoot(string name, Vector2 size)
+        private static GameObject CreateUIElementRoot(string name, Vector2 size)
         {
-            GameObject child = new GameObject(name);
+            var child = new GameObject(name);
             RectTransform rectTransform = child.AddComponent<RectTransform>();
             rectTransform.sizeDelta = size;
             return child;
         }
 
-        static GameObject CreateUIObject(string name, GameObject parent)
+        private static GameObject CreateUIObject(string name, GameObject parent)
         {
-            GameObject go = new GameObject(name);
+            var go = new GameObject(name);
             go.AddComponent<RectTransform>();
             SetParentAndAlign(go, parent);
             return go;
@@ -217,21 +212,25 @@ namespace AillieoUtils
         private static void SetParentAndAlign(GameObject child, GameObject parent)
         {
             if (parent == null)
+            {
                 return;
+            }
 
             child.transform.SetParent(parent.transform, false);
             SetLayerRecursively(child, parent.layer);
         }
 
-        static void SetLayerRecursively(GameObject go, int layer)
+        private static void SetLayerRecursively(GameObject go, int layer)
         {
             go.layer = layer;
             Transform t = go.transform;
-            for (int i = 0; i < t.childCount; i++)
+            for (var i = 0; i < t.childCount; i++)
+            {
                 SetLayerRecursively(t.GetChild(i).gameObject, layer);
+            }
         }
 
-        static void SetDefaultColorTransitionValues(Selectable slider)
+        private static void SetDefaultColorTransitionValues(Selectable slider)
         {
             ColorBlock colors = slider.colors;
             colors.highlightedColor = new Color(0.882f, 0.882f, 0.882f);

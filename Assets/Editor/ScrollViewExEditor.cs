@@ -1,30 +1,32 @@
-using UnityEditor;
-using UnityEditor.UI;
-using UnityEngine;
-using UnityEngine.UI;
+// -----------------------------------------------------------------------
+// <copyright file="ScrollViewExEditor.cs" company="AillieoTech">
+// Copyright (c) AillieoTech. All rights reserved.
+// </copyright>
+// -----------------------------------------------------------------------
 
 namespace AillieoUtils
 {
+    using UnityEditor;
 
     [CustomEditor(typeof(ScrollViewEx))]
     public class ScrollViewExEditor : ScrollViewEditor
     {
-        SerializedProperty pageSize;
+        private SerializedProperty pageSize;
 
         protected override void OnEnable()
         {
             base.OnEnable();
-            pageSize = serializedObject.FindProperty("pageSize");
+            this.pageSize = this.serializedObject.FindProperty("pageSize");
         }
 
         protected override void DrawConfigInfo()
         {
             base.DrawConfigInfo();
-            EditorGUILayout.PropertyField(pageSize);
+            EditorGUILayout.PropertyField(this.pageSize);
         }
-        
+
         [MenuItem("GameObject/UI/DynamicScrollViewEx", false, 90)]
-        public static void AddScrollViewEx(MenuCommand menuCommand)
+        private static void AddScrollViewEx(MenuCommand menuCommand)
         {
             InternalAddScrollView<ScrollViewEx>(menuCommand);
         }
