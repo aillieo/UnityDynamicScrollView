@@ -1,10 +1,9 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System;
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.EventSystems;
-using SObject = System.Object;
+using UnityEngine.Serialization;
 
 namespace AillieoUtils
 {
@@ -20,10 +19,8 @@ namespace AillieoUtils
             onValueChanged.AddListener(OnValueChanged);
         }
 
-        [SerializeField]
-        private int m_pageSize = 50;
-
-        public int pageSize => m_pageSize;
+        [SerializeField][FormerlySerializedAs("m_pageSize")]
+        private int pageSize = 50;
 
         private int startOffset = 0;
 
@@ -80,7 +77,7 @@ namespace AillieoUtils
             base.InternalScrollTo(index - startOffset);
         }
 
-        bool reloadFlag = false;
+        private bool reloadFlag = false;
 
         private void OnValueChanged(Vector2 position)
         {

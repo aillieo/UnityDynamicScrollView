@@ -1,10 +1,9 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.EventSystems;
-using SObject = System.Object;
+using UnityEngine.Serialization;
 
 namespace AillieoUtils
 {
@@ -12,7 +11,6 @@ namespace AillieoUtils
     [DisallowMultipleComponent]
     public class ScrollView : ScrollRect
     {
-
         private class ScrollItemWithRect
         {
             // scroll item 身上的 RectTransform组件
@@ -25,41 +23,39 @@ namespace AillieoUtils
             public bool rectDirty = true;
         }
 
-        int m_dataCount = 0;
-        List<ScrollItemWithRect> managedItems = new List<ScrollItemWithRect>();
+        private int dataCount = 0;
+        private readonly List<ScrollItemWithRect> managedItems = new List<ScrollItemWithRect>();
 
         // for hide and show
         public enum ItemLayoutType
         {
                                             // 最后一位表示滚动方向
-            Vertical = 1,                   // 0001
-            Horizontal = 2,                 // 0010
-            VerticalThenHorizontal = 4,     // 0100
-            HorizontalThenVertical = 5,     // 0101
+            Vertical = 0b0001,                   // 0001
+            Horizontal = 0b0010,                 // 0010
+            VerticalThenHorizontal = 0b0100,     // 0100
+            HorizontalThenVertical = 0b0101,     // 0101
         }
-        public const int flagScrollDirection = 1;  // 0001
 
+        protected const int flagScrollDirection = 1;  // 0001
 
-        [SerializeField]
-        ItemLayoutType m_layoutType = ItemLayoutType.Vertical;
-        protected ItemLayoutType layoutType { get { return m_layoutType; } }
-
+        [SerializeField][FormerlySerializedAs("m_layoutType")]
+        protected ItemLayoutType layoutType = ItemLayoutType.Vertical;
 
         // const int 代替 enum 减少 (int)和(CriticalItemType)转换
         protected static class CriticalItemType
         {
-            public const int UpToHide = 0;
-            public const int DownToHide = 1;
-            public const int UpToShow = 2;
-            public const int DownToShow = 3;
+            public static byte UpToHide = 0;
+            public static byte DownToHide = 1;
+            public static byte UpToShow = 2;
+            public static byte DownToShow = 3;
         }
 
         // 只保存4个临界index
         protected int[] criticalItemIndex = new int[4];
-        Rect refRect;
+        private Rect refRect;
 
         // resource management
-        SimpleObjPool<RectTransform> itemPool = null;
+        private SimpleObjPool<RectTransform> itemPool = null;
 
         [Tooltip("初始化时池内item数量")]
         public int poolSize;
@@ -71,17 +67,17 @@ namespace AillieoUtils
         public RectTransform itemTemplate;
 
         // callbacks for items
-        public Action<int, RectTransform> updateFunc;
-        public Func<int,Vector2> itemSizeFunc;
-        public Func<int> itemCountFunc;
-        public Func<int, RectTransform> itemGetFunc;
-        public Action<RectTransform> itemRecycleFunc;
+        protected Action<int, RectTransform> updateFunc;
+        protected Func<int, Vector2> itemSizeFunc;
+        protected Func<int> itemCountFunc;
+        protected Func<int, RectTransform> itemGetFunc;
+        protected Action<RectTransform> itemRecycleFunc;
 
         // status
         private bool initialized = false;
         private int willUpdateData = 0;
 
-        public virtual void SetUpdateFunc(Action<int,RectTransform> func)
+        public virtual void SetUpdateFunc(Action<int, RectTransform> func)
         {
             updateFunc = func;
         }
@@ -103,6 +99,19 @@ namespace AillieoUtils
                 itemGetFunc = getFunc;
                 itemRecycleFunc = recycleFunc;
             }
+            else
+            {
+                itemGetFunc = null;
+                itemRecycleFunc = null;
+            }
+        }
+
+        public void ResetAllDelegates()
+        {
+            SetUpdateFunc(null);
+            SetItemSizeFunc(null);
+            SetItemCountFunc(null);
+            SetItemGetAndRecycleFunc(null, null);
         }
 
         protected override void OnEnable()
@@ -122,7 +131,7 @@ namespace AillieoUtils
 
         public void UpdateData(bool immediately = true)
         {
-            if(immediately)
+            if (immediately)
             {
                 willUpdateData |= 3; // 0011
                 InternalUpdateData();
@@ -161,7 +170,7 @@ namespace AillieoUtils
 
         protected virtual void InternalScrollTo(int index)
         {
-            index = Mathf.Clamp(index, 0, m_dataCount - 1);
+            index = Mathf.Clamp(index, 0, dataCount - 1);
             EnsureItemRect(index);
             Rect r = managedItems[index].rect;
             int dir = (int)layoutType & flagScrollDirection;
@@ -186,7 +195,6 @@ namespace AillieoUtils
             yield return new WaitForEndOfFrame();
             InternalUpdateData();
         }
-
 
         private void InternalUpdateData()
         {
@@ -270,19 +278,19 @@ namespace AillieoUtils
                 }
             }
 
-            m_dataCount = newDataCount;
+            dataCount = newDataCount;
 
             ResetCriticalItems();
 
             willUpdateData = 0;
         }
 
-        void ResetCriticalItems()
+        private void ResetCriticalItems()
         {
             bool hasItem, shouldShow;
             int firstIndex = -1, lastIndex = -1;
 
-            for (int i = 0; i < m_dataCount; i++)
+            for (int i = 0; i < dataCount; i++)
             {
                 hasItem = managedItems[i].item != null;
                 shouldShow = ShouldItemSeenAtIndex(i);
@@ -337,7 +345,7 @@ namespace AillieoUtils
             criticalItemIndex[CriticalItemType.UpToHide] = firstIndex;
             criticalItemIndex[CriticalItemType.DownToHide] = lastIndex;
             criticalItemIndex[CriticalItemType.UpToShow] = Mathf.Max(firstIndex - 1, 0);
-            criticalItemIndex[CriticalItemType.DownToShow] = Mathf.Min(lastIndex + 1, m_dataCount - 1);
+            criticalItemIndex[CriticalItemType.DownToShow] = Mathf.Min(lastIndex + 1, dataCount - 1);
 
         }
 
@@ -353,17 +361,17 @@ namespace AillieoUtils
             ResetCriticalItems();
         }
 
-        RectTransform GetCriticalItem(int type)
+        private RectTransform GetCriticalItem(int type)
         {
             int index = criticalItemIndex[type];
-            if(index >= 0 && index < m_dataCount)
+            if(index >= 0 && index < dataCount)
             {
                 return managedItems[index].item;
             }
             return null;
         }
 
-        void UpdateCriticalItems()
+        private void UpdateCriticalItems()
         {
             bool dirty = true;
 
@@ -384,7 +392,6 @@ namespace AillieoUtils
                 }
             }
         }
-
 
         private bool CheckAndHideItem(int criticalItemType)
         {
@@ -408,7 +415,7 @@ namespace AillieoUtils
                     criticalItemIndex[criticalItemType + 2] = Mathf.Min(criticalIndex, criticalItemIndex[criticalItemType + 2]);
                     criticalItemIndex[criticalItemType]--;
                 }
-                criticalItemIndex[criticalItemType] = Mathf.Clamp(criticalItemIndex[criticalItemType], 0, m_dataCount - 1);
+                criticalItemIndex[criticalItemType] = Mathf.Clamp(criticalItemIndex[criticalItemType], 0, dataCount - 1);
 
                 if (criticalItemIndex[CriticalItemType.UpToHide] > criticalItemIndex[CriticalItemType.DownToHide])
                 {
@@ -422,7 +429,6 @@ namespace AillieoUtils
 
             return false;
         }
-
 
         private bool CheckAndShowItem(int criticalItemType)
         {
@@ -450,7 +456,7 @@ namespace AillieoUtils
                     criticalItemIndex[criticalItemType - 2] = Mathf.Max(criticalIndex, criticalItemIndex[criticalItemType - 2]);
                     criticalItemIndex[criticalItemType]++;
                 }
-                criticalItemIndex[criticalItemType] = Mathf.Clamp(criticalItemIndex[criticalItemType], 0, m_dataCount - 1);
+                criticalItemIndex[criticalItemType] = Mathf.Clamp(criticalItemIndex[criticalItemType], 0, dataCount - 1);
 
                 if (criticalItemIndex[CriticalItemType.UpToShow] >= criticalItemIndex[CriticalItemType.DownToShow])
                 {
@@ -464,10 +470,9 @@ namespace AillieoUtils
             return false;
         }
 
-
-        bool ShouldItemSeenAtIndex(int index)
+        private bool ShouldItemSeenAtIndex(int index)
         {
-            if(index < 0 || index >= m_dataCount)
+            if(index < 0 || index >= dataCount)
             {
                 return false;
             }
@@ -475,9 +480,9 @@ namespace AillieoUtils
             return new Rect(refRect.position - content.anchoredPosition, refRect.size).Overlaps(managedItems[index].rect);
         }
 
-        bool ShouldItemFullySeenAtIndex(int index)
+        private bool ShouldItemFullySeenAtIndex(int index)
         {
-            if (index < 0 || index >= m_dataCount)
+            if (index < 0 || index >= dataCount)
             {
                 return false;
             }
@@ -485,7 +490,7 @@ namespace AillieoUtils
             return IsRectContains(new Rect(refRect.position - content.anchoredPosition, refRect.size),(managedItems[index].rect));
         }
 
-        bool IsRectContains(Rect outRect, Rect inRect, bool bothDimensions = false)
+        private bool IsRectContains(Rect outRect, Rect inRect, bool bothDimensions = false)
         {
 
             if (bothDimensions)
@@ -510,8 +515,7 @@ namespace AillieoUtils
             }
         }
 
-
-        void InitPool()
+        private void InitPool()
         {
             GameObject poolNode = new GameObject("POOL");
             poolNode.SetActive(false);
@@ -536,14 +540,13 @@ namespace AillieoUtils
                 });
         }
 
-        void OnGetItemForDataIndex(RectTransform item, int index)
+        private void OnGetItemForDataIndex(RectTransform item, int index)
         {
             SetDataForItemAtIndex(item, index);
             item.transform.SetParent(content, false);
         }
 
-
-        void SetDataForItemAtIndex(RectTransform item, int index)
+        private void SetDataForItemAtIndex(RectTransform item, int index)
         {
             if (updateFunc != null)
                 updateFunc(index,item);
@@ -551,8 +554,7 @@ namespace AillieoUtils
             SetPosForItemAtIndex(item,index);
         }
 
-
-        void SetPosForItemAtIndex(RectTransform item, int index)
+        private void SetPosForItemAtIndex(RectTransform item, int index)
         {
             EnsureItemRect(index);
             Rect r = managedItems[index].rect;
@@ -560,10 +562,9 @@ namespace AillieoUtils
             item.sizeDelta = r.size;
         }
 
-
-        Vector2 GetItemSize(int index)
+        private Vector2 GetItemSize(int index)
         {
-            if(index >= 0 && index <= m_dataCount)
+            if(index >= 0 && index <= dataCount)
             {
                 if (itemSizeFunc != null)
                 {
@@ -599,7 +600,7 @@ namespace AillieoUtils
             }
         }
 
-        void InitScrollView()
+        private void InitScrollView()
         {
             initialized = true;
 
@@ -618,9 +619,9 @@ namespace AillieoUtils
         }
 
 
-        Vector3[] viewWorldConers = new Vector3[4];
-        Vector3[] rectCorners = new Vector3[2];
-        void UpdateRefRect()
+        private Vector3[] viewWorldConers = new Vector3[4];
+        private Vector3[] rectCorners = new Vector3[2];
+        private void UpdateRefRect()
         {
             /*
              *  WorldCorners
@@ -645,7 +646,7 @@ namespace AillieoUtils
             refRect = new Rect((Vector2)rectCorners[0] - content.anchoredPosition, rectCorners[1] - rectCorners[0]);
         }
 
-        void MovePos(ref Vector2 pos, Vector2 size)
+        private void MovePos(ref Vector2 pos, Vector2 size)
         {
             // 注意 所有的rect都是左下角为基准
             switch (layoutType)
@@ -745,12 +746,12 @@ namespace AillieoUtils
             ret.y += rect.size.y;
             return ret;
         }
+
         private static Rect CreateWithLeftTopAndSize(Vector2 leftTop, Vector2 size)
         {
             Vector2 leftBottom = leftTop - new Vector2(0,size.y);
             return new Rect(leftBottom,size);
         }
-
 
         protected override void OnDestroy()
         {
@@ -762,7 +763,7 @@ namespace AillieoUtils
 
         protected Rect GetItemLocalRect(int index)
         {
-            if(index >= 0 && index < m_dataCount)
+            if(index >= 0 && index < dataCount)
             {
                 EnsureItemRect(index);
                 return managedItems[index].rect;
