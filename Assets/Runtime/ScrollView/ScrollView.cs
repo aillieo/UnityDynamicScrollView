@@ -782,7 +782,7 @@ namespace AillieoUtils
                     break;
                 case ItemLayoutType.VerticalThenHorizontal:
                     pos.y -= size.y;
-                    if (pos.y <= -this.refRect.height)
+                    if (pos.y - size.y < -this.refRect.height)
                     {
                         pos.y = 0;
                         pos.x += size.x;
@@ -790,8 +790,9 @@ namespace AillieoUtils
 
                     break;
                 case ItemLayoutType.HorizontalThenVertical:
+
                     pos.x += size.x;
-                    if (pos.x >= this.refRect.width)
+                    if (pos.x + size.x > this.refRect.width)
                     {
                         pos.x = 0;
                         pos.y -= size.y;
