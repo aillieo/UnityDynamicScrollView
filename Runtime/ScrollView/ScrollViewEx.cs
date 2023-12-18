@@ -103,6 +103,12 @@ namespace AillieoUtils
             base.InternalScrollTo(index - this.startOffset);
         }
 
+        protected override void CheckDataCountChange(int oldDataCount, int newDataCount)
+        {
+            base.CheckDataCountChange(oldDataCount, newDataCount);
+            this.startOffset = Mathf.Clamp(this.startOffset, 0, Mathf.Max(this.realItemCountFunc() - this.pageSize, 0));
+        }
+
         private void OnValueChanged(Vector2 position)
         {
             int toShow;

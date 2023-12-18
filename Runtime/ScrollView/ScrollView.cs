@@ -173,12 +173,14 @@ namespace AillieoUtils
             {
                 // vertical
                 var value = 1 - (-r.yMax / (this.content.sizeDelta.y - this.refRect.height));
+                value = Mathf.Clamp01(value);
                 this.SetNormalizedPosition(value, 1);
             }
             else
             {
                 // horizontal
                 var value = r.xMin / (this.content.sizeDelta.x - this.refRect.width);
+                value = Mathf.Clamp01(value);
                 this.SetNormalizedPosition(value, 0);
             }
         }
@@ -337,12 +339,22 @@ namespace AillieoUtils
             }
 
             var newDataCount = 0;
-            var keepOldItems = (this.willUpdateData & 2) == 0;
 
             if (this.itemCountFunc != null)
             {
                 newDataCount = this.itemCountFunc();
             }
+
+            this.CheckDataCountChange(this.dataCount, newDataCount);
+
+            this.ResetCriticalItems();
+
+            this.willUpdateData = 0;
+        }
+
+        protected virtual void CheckDataCountChange(int oldDataCount, int newDataCount)
+        {
+            var keepOldItems = (this.willUpdateData & 2) == 0;
 
             if (newDataCount != this.managedItems.Count)
             {
@@ -408,10 +420,6 @@ namespace AillieoUtils
             }
 
             this.dataCount = newDataCount;
-
-            this.ResetCriticalItems();
-
-            this.willUpdateData = 0;
         }
 
         private void ResetCriticalItems()
