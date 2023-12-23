@@ -14,15 +14,17 @@ namespace AillieoUtils
         private readonly Stack<T> stack;
         private readonly Func<T> ctor;
         private readonly Action<T> onRecycle;
+        private readonly Action<T> dtor;
         private int size;
         private int usedCount;
 
-        public SimpleObjPool(int max = 5, Action<T> onRecycle = null, Func<T> ctor = null)
+        public SimpleObjPool(int max = 5, Action<T> onRecycle = null, Func<T> ctor = null, Action<T> dtor = null)
         {
             this.stack = new Stack<T>(max);
             this.size = max;
             this.onRecycle = onRecycle;
             this.ctor = ctor;
+            this.dtor = dtor;
         }
 
         public T Get()
@@ -59,13 +61,27 @@ namespace AillieoUtils
             {
                 this.stack.Push(item);
             }
+            else
+            {
+                if (this.dtor != null)
+                {
+                    this.dtor.Invoke(item);
+                }
+            }
 
             this.usedCount--;
         }
 
         public void Purge()
         {
-            // TODO
+            while (this.stack.Count > 0)
+            {
+                var item = this.stack.Pop();
+                if (this.dtor != null)
+                {
+                    this.dtor.Invoke(item);
+                }
+            }
         }
 
         public override string ToString()
