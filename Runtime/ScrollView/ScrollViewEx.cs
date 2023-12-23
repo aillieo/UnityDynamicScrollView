@@ -27,6 +27,8 @@ namespace AillieoUtils
 
         private bool reloadFlag = false;
 
+        private int realDataCount = 0;
+
         public override void SetUpdateFunc(Action<int, RectTransform> func)
         {
             if (func != null)
@@ -103,10 +105,22 @@ namespace AillieoUtils
             base.InternalScrollTo(index - this.startOffset);
         }
 
-        protected override void CheckDataCountChange(int oldDataCount, int newDataCount)
+        protected override void CheckDataCountChange()
         {
-            base.CheckDataCountChange(oldDataCount, newDataCount);
-            this.startOffset = Mathf.Clamp(this.startOffset, 0, Mathf.Max(this.realItemCountFunc() - this.pageSize, 0));
+            base.CheckDataCountChange();
+
+            var newDataCount = 0;
+            if (this.realItemCountFunc != null)
+            {
+                newDataCount = this.realItemCountFunc();
+            }
+
+            if (newDataCount < this.realDataCount)
+            {
+                this.startOffset = Mathf.Clamp(this.startOffset, 0, Mathf.Max(this.realItemCountFunc() - this.pageSize, 0));
+            }
+
+            this.realDataCount = newDataCount;
         }
 
         private void OnValueChanged(Vector2 position)

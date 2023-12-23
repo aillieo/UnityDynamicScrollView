@@ -60,6 +60,8 @@ namespace AillieoUtils
         private Vector3[] viewWorldConers = new Vector3[4];
         private Vector3[] rectCorners = new Vector3[2];
 
+        private bool applicationIsQuitting;
+
         // for hide and show
         public enum ItemLayoutType
         {
@@ -188,12 +190,24 @@ namespace AillieoUtils
         protected override void SetContentAnchoredPosition(Vector2 position)
         {
             base.SetContentAnchoredPosition(position);
+
+            if (this.willUpdateData != 0)
+            {
+                return;
+            }
+
             this.UpdateCriticalItems();
         }
 
         protected override void SetNormalizedPosition(float value, int axis)
         {
             base.SetNormalizedPosition(value, axis);
+
+            if (this.willUpdateData != 0)
+            {
+                return;
+            }
+
             this.ResetCriticalItems();
         }
 
@@ -322,6 +336,7 @@ namespace AillieoUtils
         private IEnumerator DelayUpdateData()
         {
             yield return new WaitForEndOfFrame();
+
             this.InternalUpdateData();
         }
 
@@ -338,6 +353,15 @@ namespace AillieoUtils
                 this.InitScrollView();
             }
 
+            this.CheckDataCountChange();
+
+            this.ResetCriticalItems();
+
+            this.willUpdateData = 0;
+        }
+
+        protected virtual void CheckDataCountChange()
+        {
             var newDataCount = 0;
 
             if (this.itemCountFunc != null)
@@ -345,15 +369,6 @@ namespace AillieoUtils
                 newDataCount = this.itemCountFunc();
             }
 
-            this.CheckDataCountChange(this.dataCount, newDataCount);
-
-            this.ResetCriticalItems();
-
-            this.willUpdateData = 0;
-        }
-
-        protected virtual void CheckDataCountChange(int oldDataCount, int newDataCount)
-        {
             var keepOldItems = (this.willUpdateData & 2) == 0;
 
             if (newDataCount != this.managedItems.Count)
@@ -666,6 +681,14 @@ namespace AillieoUtils
 
                     itemObj.SetActive(true);
                     return item;
+                },
+                (RectTransform item) =>
+                {
+                    if (!applicationIsQuitting)
+                    {
+                        item.transform.SetParent(null, false);
+                        Destroy(item.gameObject);
+                    }
                 });
         }
 
@@ -810,6 +833,11 @@ namespace AillieoUtils
                 default:
                     break;
             }
+        }
+
+        private void OnApplicationQuit()
+        {
+            applicationIsQuitting = true;
         }
 
         // const int 代替 enum 减少 (int)和(CriticalItemType)转换
