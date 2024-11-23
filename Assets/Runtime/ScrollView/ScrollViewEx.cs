@@ -238,7 +238,14 @@ namespace AillieoUtils
                 var dataCount = 0;
                 if (this.itemCountFunc != null)
                 {
-                    dataCount = this.itemCountFunc();
+                    try
+                    {
+                        dataCount = this.itemCountFunc();
+                    }
+                    catch (Exception e)
+                    {
+                        UnityEngine.Debug.LogException(e);
+                    }
                 }
 
                 if (dataCount > 0)
